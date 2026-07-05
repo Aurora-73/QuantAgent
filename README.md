@@ -1,4 +1,4 @@
-# QuantAgent — AI 辅助量化交易研究系统 v2
+# QuantAgent — AI 辅助量化交易研究系统
 
 > **核心原则**：传统量化引擎做交易主干，LLM 只做研究和信息处理，不直接决定下单。
 > **设计方法**：站在巨人肩膀上，直接集成已有开源项目，只写必要的胶水层。
@@ -301,7 +301,32 @@ quant-system/
 - Python 3.10+
 - Git
 
-### 安装步骤
+### 一键安装（推荐）
+
+**跨平台（推荐）：**
+```bash
+python scripts/install.py
+```
+
+**Windows（PowerShell）：**
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install_windows.ps1
+```
+
+**Linux/Mac（Bash）：**
+```bash
+bash scripts/install.sh
+```
+
+脚本会自动完成：
+1. ✅ 环境检查（Python/Git）
+2. ✅ 创建虚拟环境（自动检测并修复平台不匹配问题）
+3. ✅ 安装核心依赖（requirements.txt）
+4. ✅ 创建配置文件（configs/.env）
+5. ✅ 创建必要目录（data/, logs/, knowledge/）
+6. ✅ 验证安装（运行 verify_project.py）
+
+### 手动安装
 
 ```bash
 # 克隆项目
@@ -320,6 +345,14 @@ pip install -r requirements.txt
 cp configs/.env.example configs/.env
 # 编辑 configs/.env，填入必要的 API Key
 ```
+
+### 可选依赖安装
+
+| 模块 | 命令 | 说明 |
+|------|------|------|
+| Qlib | `pip install qlib` | 研究层核心，因子分析/回测 |
+| vnpy | `pip install ta-lib vnpy vnpy-ctp` | 执行引擎，实盘交易 |
+| OpenBB | `pip install openbb` | 海外数据源 |
 
 ### 运行示例
 

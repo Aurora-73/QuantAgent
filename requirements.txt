@@ -25,6 +25,7 @@ langgraph-checkpoint-sqlite>=1.0
 # Monitoring
 rich>=13.0
 schedule>=1.2
+loguru>=0.7
 
 # ============================================================
 # 以下需要额外安装，详见文档
