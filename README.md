@@ -75,6 +75,12 @@ quant-system/
 ├── tests/                     # 单元测试
 ├── scripts/                   # 脚本入口
 ├── docs/                      # 文档
+│   ├── getting-started/       # 快速上手
+│   ├── development/           # 开发指南
+│   ├── research/              # 研究方法
+│   ├── operations/            # 运维文档
+│   ├── reference/             # 参考文档
+│   └── project/               # 项目管理
 ├── requirements.txt           # 依赖列表
 ├── pyproject.toml             # 项目配置
 └── LICENSE                    # 许可证
