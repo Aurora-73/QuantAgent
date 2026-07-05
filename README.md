@@ -1,0 +1,483 @@
+# QuantAgent — AI 辅助量化交易研究系统 v2
+
+> **核心原则**：传统量化引擎做交易主干，LLM 只做研究和信息处理，不直接决定下单。
+> **设计方法**：站在巨人肩膀上，直接集成已有开源项目，只写必要的胶水层。
+
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-active-orange.svg)](https://github.com/quantagent/quant-system)
+[![TRAE AI 创造力大赛](https://img.shields.io/badge/TRAE-AI%20Creativity%20Contest-purple.svg)](https://forum.trae.cn/c/38-category/38)
+
+## 📖 项目简介
+
+QuantAgent 是一个**个人可实现的 Agent 基金公司**，通过多 Agent 团队协作，自动化完成量化交易研究的全流程：
+
+- **数据层**：多数据源自动切换（AKShare/baostock/pytdx），统一数据清洗
+- **研究层**：因子分析、策略回测、Walk-forward 验证
+- **策略层**：插件化架构，支持动量、事件驱动、情绪分析等策略
+- **风控层**：系统化风控引擎，单票限制、行业集中度、回撤熔断
+- **记忆层**：层级记忆系统（日报→周报→月报→季报→年报）
+- **LLM 辅助**：多 Agent 研究团队（新闻/基本面/技术面/风控/研究助理）
+
+## 🏗️ 系统架构
+
+### 系统上下文图
+
+```mermaid
+flowchart TD
+    subgraph 用户层
+        User[用户 / 研究员]
+    end
+    
+    subgraph QuantAgent系统
+        direction LR
+        DailyResearch[每日研究流程]
+        Backtest[回测引擎]
+        RiskEngine[风控引擎]
+        Knowledge[知识库]
+        Report[报告生成]
+    end
+    
+    subgraph 外部数据源
+        AKShare[AKShare - A股数据]
+        OpenBB[OpenBB - 海外数据]
+        BaoStock[baostock - 历史数据]
+        Tushare[Tushare - 专业数据]
+    end
+    
+    subgraph 集成框架
+        Qlib[Qlib - 因子/回测]
+        vnpy[vnpy - 执行引擎]
+        TradingAgents[TradingAgents - 多Agent]
+        VectorBT[VectorBT - 快速回测]
+        Riskfolio[Riskfolio-Lib - 组合优化]
+    end
+    
+    subgraph LLM服务
+        LLM[OpenAI / 国产LLM]
+    end
+    
+    User --> DailyResearch
+    User --> Backtest
+    User --> Report
+    
+    AKShare --> DailyResearch
+    OpenBB --> DailyResearch
+    BaoStock --> DailyResearch
+    Tushare --> DailyResearch
+    
+    DailyResearch --> Qlib
+    DailyResearch --> TradingAgents
+    Backtest --> Qlib
+    Backtest --> VectorBT
+    
+    RiskEngine --> Riskfolio
+    
+    TradingAgents --> LLM
+    Report --> LLM
+    
+    DailyResearch --> Knowledge
+    Report --> Knowledge
+    Backtest --> Knowledge
+    
+    DailyResearch --> RiskEngine
+    
+    classDef user fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef system fill:#bbf,stroke:#333,stroke-width:2px;
+    classDef external fill:#bfb,stroke:#333,stroke-width:2px;
+    classDef framework fill:#fcb,stroke:#333,stroke-width:2px;
+    classDef llm fill:#ffb,stroke:#333,stroke-width:2px;
+    
+    class User user;
+    class DailyResearch,Backtest,RiskEngine,Knowledge,Report system;
+    class AKShare,OpenBB,BaoStock,Tushare external;
+    class Qlib,vnpy,TradingAgents,VectorBT,Riskfolio framework;
+    class LLM llm;
+```
+
+### 核心业务架构
+
+```mermaid
+flowchart TB
+    subgraph 集成层
+        direction LR
+        Qlib[Qlib<br/>研究引擎]
+        vnpy[vnpy<br/>执行引擎]
+        TradingAgents[TradingAgents<br/>多Agent研究]
+        OpenBB[OpenBB<br/>数据入口]
+    end
+    
+    subgraph 数据层
+        Provider[data/provider.py<br/>多数据源自动切换]
+        Cleaner[data/cleaner.py<br/>统一数据清洗]
+        Storage[data/storage.py<br/>DuckDB存储]
+    end
+    
+    subgraph 研究层
+        Backtest[research/backtest.py<br/>回测引擎]
+        FactorEval[research/factor_eval.py<br/>因子评估]
+        WalkForward[Walk-forward验证]
+    end
+    
+    subgraph 策略层
+        direction LR
+        Momentum[动量策略]
+        EventDriven[事件驱动策略]
+        Sentiment[情绪策略]
+        Regime[状态切换策略]
+    end
+    
+    subgraph 风控层
+        RiskEngine[risk/risk_engine.py<br/>风控引擎]
+        Portfolio[risk/portfolio.py<br/>组合优化]
+    end
+    
+    subgraph 记忆层
+        Daily[日报] --> Weekly[周报]
+        Weekly --> Monthly[月报]
+        Monthly --> Quarterly[季报]
+        Quarterly --> Annual[年报]
+        Events[事件库]
+        Hypotheses[假设库]
+        Failures[失败案例]
+    end
+    
+    subgraph LLM层
+        ReportAgent[llm/report_agent.py<br/>报告生成]
+        AnalysisAgent[多Agent分析]
+    end
+    
+    OpenBB --> Provider
+    Provider --> Cleaner
+    Cleaner --> Storage
+    
+    Storage --> Backtest
+    Storage --> FactorEval
+    
+    Qlib --> Backtest
+    Qlib --> FactorEval
+    Backtest --> WalkForward
+    
+    WalkForward --> StrategyBase[策略接口]
+    StrategyBase --> Momentum
+    StrategyBase --> EventDriven
+    StrategyBase --> Sentiment
+    StrategyBase --> Regime
+    
+    Momentum --> RiskEngine
+    EventDriven --> RiskEngine
+    Sentiment --> RiskEngine
+    Regime --> RiskEngine
+    
+    RiskEngine --> Portfolio
+    
+    Portfolio --> vnpy
+    
+    Backtest --> ReportAgent
+    FactorEval --> ReportAgent
+    RiskEngine --> ReportAgent
+    
+    TradingAgents --> AnalysisAgent
+    AnalysisAgent --> ReportAgent
+    
+    ReportAgent --> Daily
+    Backtest --> Events
+    RiskEngine --> Failures
+    
+    classDef integration fill:#e6f7ff,stroke:#1890ff,stroke-width:2px;
+    classDef data fill:#f6ffed,stroke:#52c41a,stroke-width:2px;
+    classDef research fill:#fff7e6,stroke:#fa8c16,stroke-width:2px;
+    classDef strategy fill:#fff1f0,stroke:#ff4d4f,stroke-width:2px;
+    classDef risk fill:#f9f0ff,stroke:#722ed1,stroke-width:2px;
+    classDef memory fill:#fffbe6,stroke:#faad14,stroke-width:2px;
+    classDef llm fill:#e6fffb,stroke:#13c2c2,stroke-width:2px;
+    
+    class Qlib,vnpy,TradingAgents,OpenBB integration;
+    class Provider,Cleaner,Storage data;
+    class Backtest,FactorEval,WalkForward research;
+    class Momentum,EventDriven,Sentiment,Regime,StrategyBase strategy;
+    class RiskEngine,Portfolio risk;
+    class Daily,Weekly,Monthly,Quarterly,Annual,Events,Hypotheses,Failures memory;
+    class ReportAgent,AnalysisAgent llm;
+```
+
+### Agent 团队协作架构
+
+```mermaid
+flowchart TD
+    subgraph 投资委员会
+        IC[投资委员会]
+    end
+    
+    subgraph 分析师团队
+        NewsAnalyst[新闻分析师]
+        FundAnalyst[基本面分析师]
+        TechAnalyst[技术面分析师]
+        RiskOfficer[风控官]
+        ResearchAssist[研究助理]
+    end
+    
+    subgraph 输出
+        StrategyAdvice[策略建议]
+        DailyReport[日报]
+        RiskAlert[风控告警]
+    end
+    
+    NewsAnalyst --> IC
+    FundAnalyst --> IC
+    TechAnalyst --> IC
+    RiskOfficer --> IC
+    ResearchAssist --> IC
+    
+    IC --> StrategyAdvice
+    IC --> DailyReport
+    
+    RiskOfficer --> RiskAlert
+    
+    NewsAnalyst --> DailyReport
+    FundAnalyst --> DailyReport
+    TechAnalyst --> DailyReport
+    ResearchAssist --> DailyReport
+    
+    classDef committee fill:#ffd700,stroke:#b8860b,stroke-width:2px;
+    classDef analyst fill:#87ceeb,stroke:#4682b4,stroke-width:2px;
+    classDef output fill:#98fb98,stroke:#228b22,stroke-width:2px;
+    
+    class IC committee;
+    class NewsAnalyst,FundAnalyst,TechAnalyst,RiskOfficer,ResearchAssist analyst;
+    class StrategyAdvice,DailyReport,RiskAlert output;
+```
+
+## 📁 目录结构
+
+```
+quant-system/
+├── quant_system/              # 核心源码包
+│   ├── data/                  # 数据层
+│   │   ├── provider.py        # 数据获取
+│   │   ├── storage.py         # DuckDB存储
+│   │   └── cleaner.py         # 数据清洗
+│   ├── strategies/            # 策略层
+│   │   ├── base/              # 策略基类
+│   │   ├── momentum/          # 动量策略
+│   │   ├── event_driven/      # 事件驱动策略
+│   │   └── sentiment/         # 情绪策略
+│   ├── research/              # 研究层
+│   │   ├── backtest.py        # 回测引擎
+│   │   └── factor_eval.py     # 因子评估
+│   ├── risk/                  # 风控层
+│   │   ├── risk_engine.py     # 风控引擎
+│   │   └── portfolio.py       # 组合优化
+│   ├── knowledge/             # 记忆层
+│   │   └── knowledge_base.py  # 层级记忆系统
+│   ├── llm/                   # LLM层
+│   │   └── report_agent.py    # 报告生成Agent
+│   ├── integrations/          # 集成层
+│   │   ├── qlib_engine.py     # Qlib集成
+│   │   ├── vnpy_engine.py     # vnpy集成
+│   │   ├── trading_agents.py  # TradingAgents集成
+│   │   └── openbb_data.py     # OpenBB集成
+│   ├── configs/               # 配置文件
+│   └── monitoring/            # 监控层
+├── examples/                  # 使用示例
+│   ├── 00_quick_start.py      # 快速开始
+│   ├── 01_get_data.py         # 数据获取
+│   ├── 02_calc_factors.py     # 因子计算
+│   ├── 03_backtest.py         # 回测演示
+│   ├── 04_knowledge.py        # 知识库演示
+│   └── 05_llm_analysis.py     # LLM分析演示
+├── tests/                     # 单元测试
+├── scripts/                   # 脚本入口
+├── docs/                      # 文档
+├── requirements.txt           # 依赖列表
+├── pyproject.toml             # 项目配置
+└── LICENSE                    # 许可证
+```
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Python 3.10+
+- Git
+
+### 安装步骤
+
+```bash
+# 克隆项目
+git clone https://github.com/quantagent/quant-system.git
+cd quant-system
+
+# 创建虚拟环境
+python -m venv .venv
+source .venv/bin/activate    # Linux/macOS
+.venv\Scripts\activate       # Windows
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 配置 API Key
+cp configs/.env.example configs/.env
+# 编辑 configs/.env，填入必要的 API Key
+```
+
+### 运行示例
+
+```bash
+# 快速开始：获取数据并运行回测
+python examples/00_quick_start.py
+
+# 获取股票数据
+python examples/01_get_data.py --ticker 600519 --start 2025-01-01
+
+# 计算因子
+python examples/02_calc_factors.py
+
+# 运行回测
+python examples/03_backtest.py --strategy momentum
+
+# 使用知识库
+python examples/04_knowledge.py
+
+# LLM 分析
+python examples/05_llm_analysis.py
+```
+
+### 每日研究流程
+
+```bash
+# 运行每日研究（不含 LLM）
+python -m scripts daily-research --no-llm
+
+# 运行回测
+python -m scripts backtest --strategy momentum --ticker 600519 --start 2025-01-01
+
+# 健康检查
+python -m scripts health_check
+```
+
+## 🤖 LLM 的正确位置
+
+```
+✅ 合适 (通过 TradingAgents)         ❌ 不合适
+─────────────────────────────────────────────────
+技术面分析 (Market Analyst)           直接决定买卖
+基本面分析 (Fundamentals Analyst)     直接生成仓位
+情绪面分析 (Sentiment Analyst)        替代风控规则
+新闻分析 (News Analyst)              替代组合优化器
+多空辩论 (Bull/Bear Debate)          替代执行引擎
+风控辩论 (Risk Debate)               无约束的自由决策
+```
+
+**一句话：LLM 是研究员，不是交易员。**
+
+## 🧪 运行测试
+
+```bash
+# 运行所有测试
+pytest
+
+# 运行指定模块测试
+pytest tests/test_risk_engine.py -v
+
+# 运行策略相关测试
+pytest tests/test_momentum_strategy.py -v
+
+# 生成覆盖率报告
+pytest --cov=quant_system --cov-report=html
+```
+
+## 🌐 开源项目集成
+
+| 项目 | 用途 | 集成方式 | 集成模块 |
+|------|------|---------|---------|
+| **Qlib** | 研究层核心 | 直接 import | `integrations/qlib_engine.py` |
+| **vnpy** | 执行层核心 | 直接 import | `integrations/vnpy_engine.py` |
+| **TradingAgents** | LLM多Agent研究 | 直接 import | `integrations/trading_agents.py` |
+| **OpenBB** | 数据入口 | 直接 import | `integrations/openbb_data.py` |
+| **Riskfolio-Lib** | 组合优化 | pip install | `risk/portfolio.py` |
+| **VectorBT** | 快速回测 | pip install | `research/backtest.py` |
+| **AKShare** | A股数据 | pip install | `data/provider.py` |
+
+## 📊 核心模块
+
+### 策略接口 (每个策略必须实现)
+
+```python
+class StrategyBase(ABC):
+    prepare_features()          # 准备特征
+    generate_signal()           # 生成信号
+    position_sizing()           # 仓位计算
+    risk_check()                # 风控检查
+    expected_holding_period()   # 预期持仓周期
+    kill_switch_condition()     # 熔断条件
+```
+
+### 知识库结构
+
+```
+knowledge/
+  daily/          日报 (Markdown)
+  weekly/         周报
+  monthly/        月报
+  quarterly/      季报
+  annual/         年报
+  events/         事件数据库 (JSONL)
+  hypotheses/     假设库
+  failures/       失败案例
+```
+
+## 🗺️ 开发路线
+
+### Phase 1: 研究 + 报告 + 复盘 ✅
+- [x] 数据接入 (AKShare + OpenBB)
+- [x] Qlib 研究引擎集成
+- [x] 因子计算与评估
+- [x] VectorBT 回测
+- [x] 知识库 (事件/假设/教训)
+- [x] 日报/周报/月报生成
+- [x] Riskfolio-Lib 组合优化
+- [x] 风控引擎
+- [x] 监控告警
+- [x] TradingAgents 多Agent集成
+
+### Phase 2: 信号引擎 + 回测 ⚡
+- [x] 策略插件接口
+- [x] 动量策略实现
+- [ ] Qlib LightGBM 模型训练
+- [ ] Walk-forward 验证
+
+### Phase 3: 仿真盘
+- [ ] vnpy 模拟交易
+- [ ] 滑点与成交监控
+- [ ] 回测 vs 实盘偏差分析
+
+### Phase 4: 小资金实盘
+- [ ] vnpy CTP/IB 连接
+- [ ] 风控熔断机制
+- [ ] 实时监控告警
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙋‍♂️ Contributing
+
+欢迎提交 Issue 和 Pull Request！请遵循以下规范：
+
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/foo`)
+3. 提交更改 (`git commit -am 'Add foo'`)
+4. 推送到分支 (`git push origin feature/foo`)
+5. 创建 Pull Request
+
+## 📞 Contact
+
+如有问题或建议，欢迎通过以下方式联系：
+
+- GitHub Issues: [https://github.com/quantagent/quant-system/issues](https://github.com/quantagent/quant-system/issues)
+- 邮件: contact@quantagent.dev
+
+---
+
+**AI 不负责猜涨跌，AI 负责提高整个研究链路的效率和质量！** 🚀

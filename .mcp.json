@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "QuantSystem": {
+      "command": "C:/Users/Aurora/AppData/Local/Programs/Python/Python313/python.exe",
+      "args": [
+        "-m",
+        "mcp_server.server"
+      ],
+      "cwd": "E:/Code/量化交易/quant-system",
+      "env": {
+        "PYTHONPATH": "E:/Code/量化交易/quant-system",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}

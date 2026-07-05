@@ -1,0 +1,30 @@
+# 动量策略配置
+name: momentum
+description: 趋势动量策略 — 追涨杀跌的量化版本
+
+# 因子参数
+lookback_period: 20        # 动量回看周期 (天)
+volatility_period: 20      # 波动率计算周期
+volume_filter_period: 20   # 成交量过滤周期
+
+# 信号参数
+entry_threshold: 0.05      # 入场阈值 (20日动量 > 5%)
+exit_threshold: -0.02      # 出场阈值 (20日动量 < -2%)
+rsi_overbought: 70         # RSI 超买
+rsi_oversold: 30           # RSI 超卖
+
+# 仓位参数
+max_position_pct: 0.05     # 单票最大仓位 5%
+target_positions: 10       # 目标持仓数量
+rebalance_freq: weekly     # 调仓频率
+
+# 风控参数
+max_drawdown: -0.05        # 最大回撤熔断
+daily_loss_limit: -0.02    # 日亏损限额
+max_volatility: 0.5        # 最大年化波动率
+
+# 过滤条件
+min_market_cap: 5e9        # 最小市值 50亿
+min_daily_volume: 5e7      # 最小日均成交额 5000万
+exclude_st: true           # 排除 ST
+exclude_new: 60            # 排除上市不满60天

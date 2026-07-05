@@ -1,0 +1,43 @@
+# 市场状态切换策略配置
+name: regime_switch
+description: 市场状态切换策略 — 根据 regime 选择最优子策略
+
+# 各市场状态下的子策略配置
+regime_strategies:
+  trend:                     # 趋势市 → 动量策略
+    primary: momentum
+    weight: 0.8
+    params:
+      lookback_period: 20
+      entry_threshold: 0.05
+  oscillating:               # 震荡市 → 反转策略
+    primary: event_driven
+    weight: 0.6
+    params:
+      decay_days: 3
+  extreme_volatility:        # 极端波动 → 防守
+    primary: null             # 不开新仓
+    weight: 0.0
+    params: {}
+  earnings_season:           # 财报季 → 事件驱动
+    primary: event_driven
+    weight: 0.7
+    params: {}
+  policy_window:             # 政策窗口 → 情绪策略
+    primary: sentiment
+    weight: 0.5
+    params: {}
+
+# 状态切换参数
+min_regime_confidence: 0.3      # 最小置信度才切换
+cooldown_days: 3                # 切换冷却期
+max_daily_switches: 2           # 每日最大切换次数
+
+# 仓位参数
+max_position_pct: 0.05
+target_positions: 10
+rebalance_freq: daily
+
+# 风控参数
+max_drawdown: -0.05
+daily_loss_limit: -0.02

@@ -1,0 +1,37 @@
+# 事件驱动策略配置
+name: event_driven
+description: 事件驱动策略 — 基于结构化事件的信号映射
+
+# 事件类型权重
+event_weights:
+  earnings_surprise: 0.6       # 业绩超预期
+  earnings_miss: -0.5          # 业绩不及预期
+  analyst_upgrade: 0.3         # 分析师上调
+  analyst_downgrade: -0.3      # 分析师下调
+  major_contract: 0.5          # 重大合同
+  regulatory_penalty: -0.4     # 监管处罚
+  shareholder_increase: 0.3    # 股东增持
+  shareholder_decrease: -0.3   # 股东减持
+  product_launch: 0.2          # 新品发布
+  management_change: 0.1       # 管理层变更
+
+# 置信度参数
+min_confidence: 0.3            # 最小事件置信度
+confidence_multiplier: 1.0     # 置信度乘数
+max_signal_strength: 0.8       # 最大信号强度
+
+# 衰减参数
+decay_days: 5                  # 事件信号衰减天数
+min_decay: 0.1                 # 最小衰减值
+
+# 时间窗口
+event_window_days: 3           # 事件有效窗口（日前 + 日后）
+
+# 仓位参数
+max_position_pct: 0.05
+target_positions: 10
+rebalance_freq: daily
+
+# 风控参数
+max_drawdown: -0.05
+daily_loss_limit: -0.02

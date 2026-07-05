@@ -1,0 +1,86 @@
+# ============================================================
+# Quant System — .gitignore
+# ============================================================
+
+# ---- Environment & Secrets ----
+.env
+.env.local
+.env.*.local
+configs/.env
+configs/.env.local
+
+# ---- Python Virtual Environment ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- IDE ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ---- macOS ----
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# ---- Windows ----
+Thumbs.db
+Desktop.ini
+
+# ---- Build & Dist ----
+dist/
+build/
+*.egg-info/
+*.egg
+
+# ---- Data ----
+data/raw/
+data/cache/
+data/*.db
+data/*.duckdb
+knowledge/daily/
+knowledge/weekly/
+knowledge/monthly/
+knowledge/quarterly/
+knowledge/annual/
+knowledge/events/*.jsonl
+knowledge/hypotheses/*.jsonl
+knowledge/failures/*.jsonl
+
+# ---- Logs ----
+logs/
+*.log
+*.log.*
+
+# ---- Testing ----
+.pytest_cache/
+.coverage
+htmlcov/
+.nyc_output/
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+*.ipynb
+
+# ---- Notebooks ----
+*.nbconvert.ipynb
+
+# ---- Temp Files ----
+*.tmp
+*.temp
+
+# ---- Documentation ----
+docs/_build/
+docs/.doctrees/
+
+# ---- Node.js ----
+node_modules/
+package-lock.json
+
+# ---- Docker ----
+docker-compose.override.yml

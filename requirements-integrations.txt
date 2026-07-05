@@ -1,0 +1,22 @@
+-r requirements-research.txt
+
+# LangChain 相关（TradingAgents 多 Agent 协作）
+langchain>=0.3
+langgraph>=0.4
+langchain-openai>=0.3
+langgraph-checkpoint-sqlite>=1.0
+
+# ============================================================
+# 以下需要额外安装，详见文档
+# ============================================================
+
+# Qlib（需要编译 C 扩展）
+# pip install pyqlib
+# 或: cd ../_reference/qlib && pip install -e .
+
+# vnpy（需要 TA-Lib C 库）
+# 先安装 TA-Lib: sudo apt install libta-lib-dev
+# 然后: pip install ta-lib vnpy vnpy-ctp vnpy-ib
+
+# OpenBB（依赖较多）
+# pip install openbb

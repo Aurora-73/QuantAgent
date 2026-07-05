@@ -1,0 +1,106 @@
+# ============================================================
+# Quant System — Structured Configuration
+# ============================================================
+# Loaded by configs/settings.py via pydantic-settings.
+# Secrets (API keys, sendkeys, tokens) go in .env, NOT here.
+# ============================================================
+
+# ---- Paths ----
+db_path: "data/quant.duckdb"
+knowledge_dir: "knowledge"
+log_dir: "logs"
+log_level: "INFO"
+reference_dir: "../_reference"
+
+# ---- Data ----
+default_start_date: "20200101"
+default_universe: "csi300"
+data_request_sleep: 0.3
+default_index_code: "000300"
+
+# ---- LLM ----
+llm_model: "gpt-4o"
+llm_temperature: 0.3
+llm_max_tokens: 4096
+llm_extraction_temperature: 0.2
+llm_extraction_max_tokens: 2048
+
+# ---- Notification (SendChan) ----
+sendchan_api_url: "https://sctapi.ftqq.com/{sendkey}.send"
+sendchan_status_url: "https://sctapi.ftqq.com/push"
+
+# ---- Risk ----
+max_single_position: 0.05
+max_sector_exposure: 0.20
+max_total_exposure: 1.00
+max_daily_turnover: 0.10
+max_drawdown_stop: -0.05
+daily_loss_limit: -0.02
+min_daily_volume: 50000000
+volatility_cap: 3.0
+consecutive_losses_limit: 5
+risk_free_rate: 0.02
+
+# ---- Strategy: Momentum ----
+momentum_lookback: 20
+momentum_entry_threshold: 0.05
+momentum_exit_threshold: -0.02
+momentum_rsi_overbought: 70
+momentum_rsi_oversold: 30
+momentum_max_position_pct: 0.05
+momentum_target_positions: 10
+momentum_holding_min_days: 3
+momentum_holding_max_days: 20
+momentum_holding_typical_days: 10
+
+# ---- Backtest ----
+backtest_init_cash: 1000000
+backtest_fees: 0.001
+backtest_slippage: 0.001
+backtest_freq: "B"
+backtest_train_window: 252
+backtest_test_window: 63
+backtest_step: 21
+backtest_topk: 50
+backtest_n_drop: 5
+
+# ---- Scheduler ----
+schedule_data_update_time: "15:30"
+schedule_research_time: "16:00"
+
+# ---- Factor Evaluation ----
+factor_ic_min_samples: 30
+factor_ic_rolling_window: 60
+factor_group_count: 5
+factor_decay_max_lag: 20
+factor_decay_min_samples: 30
+factor_holding_period: 5
+factor_lookahead_period: 5
+
+# ---- News / Events ----
+news_tier1_weight: 1.0
+news_tier2_weight: 0.8
+news_tier3_weight: 0.6
+news_tier4_weight: 0.4
+news_confidence_boost_per_source: 0.1
+news_confidence_boost_cap: 0.3
+news_dedup_time_window_hours: 24
+news_dedup_similarity_threshold: 0.8
+news_high_confidence_threshold: 0.7
+news_multi_source_threshold: 2
+
+# ---- Qlib Integration ----
+qlib_provider_uri: "~/.qlib/qlib_data/cn_data"
+qlib_lgbm_loss: "mse"
+qlib_lgbm_early_stopping: 50
+qlib_lgbm_num_boost: 1000
+qlib_lstm_hidden_size: 64
+qlib_lstm_num_layers: 2
+qlib_lstm_epochs: 200
+qlib_lstm_lr: 0.001
+qlib_train_start: "2020-01-01"
+qlib_train_end: "2023-12-31"
+qlib_limit_threshold: 0.095
+qlib_open_cost: 0.0005
+qlib_close_cost: 0.0015
+qlib_min_cost: 5

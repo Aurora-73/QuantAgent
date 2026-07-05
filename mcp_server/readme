@@ -1,0 +1,88 @@
+MCP Server — QuantSystem
+=========================
+
+30 MCP tools for Claude/Codex/Trae integration, organized as:
+
+  tools_data.py      → 行情数据、报价、历史、因子、指数
+  tools_risk.py      → 风险、压力测试、Brinson、衰减检测、回测
+  tools_knowledge.py → 报告、事件、Wiki、决策、情绪
+
+
+配置步骤
+--------
+
+1. 确认 Python 环境位于 quant-system/.venv
+2. 找到 python.exe 的绝对路径
+3. 在 MCP 客户端的配置文件中添加以下条目
+
+
+Claude Desktop (claude.json / .claude.json)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+注意：Claude 的 MCP 配置故意不支持 cwd 选项。
+因此必须通过 PYTHONPATH 来指定项目根目录，否则 Python 找不到模块。
+
+正确配置（stdin/stdout 传输）：
+
+    "QuantSystem": {
+      "type": "stdio",
+      "command": "C:\\Users\\Aurora\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "args": ["-m", "mcp_server.server"],
+      "env": {
+        "PYTHONPATH": "E:\\Code\\量化交易\\quant-system"
+      }
+    }
+
+PYTHONPATH 的作用：server.py 第 18 行会执行 sys.path.insert(0, ...) 来添加项目根目录，
+但进程启动时如果工作目录不正确，Python 仍然找不到 mcp_server 包。设置 PYTHONPATH
+可以确保无论工作目录指向哪里，Python 都能正确导入 mcp_server 及其依赖。
+
+
+易错点
+------
+
+1. 不要依赖 cwd 选项
+   Claude Desktop 配置中的 cwd 项被忽略，进程始终在 Python 安装目录或系统临时目录启动。
+   必须用 "env": { "PYTHONPATH": "absolute\\path\\to\\quant-system" } 替代。
+
+2. PYTHONPATH 必须用绝对路径
+   相对路径（如 "."）的工作目录不确定，导致模块导入失败。始终使用完整路径。
+
+3. Windows 路径转义
+   JSON 中反斜杠需要双写：E:\\Code\\量化交易\\quant-system
+   也可以用正斜杠：E:/Code/量化交易/quant-system
+
+4. 虚拟环境
+   如果使用 .venv，command 应指向 .venv\\Scripts\\python.exe，而不是系统 Python。
+   配置示例（虚拟环境）：
+
+    "QuantSystem": {
+      "type": "stdio",
+      "command": "E:\\Code\\量化交易\\quant-system\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "mcp_server.server"],
+      "env": {
+        "PYTHONPATH": "E:\\Code\\量化交易\\quant-system"
+      }
+    }
+
+5. 重启客户端后配置才生效
+   修改配置后需要完全退出并重启 MCP 客户端（Claude Desktop / Codex / Trae），
+   仅重载窗口不一定能使新配置生效。
+
+
+Codex (config.toml)
+~~~~~~~~~~~~~~~~~~~
+
+  [mcp_servers.QuantSystem]
+  type = "stdio"
+  command = "python"
+  args = ["-m", "mcp_server.server"]
+  cwd = "E:/Code/量化交易/quant-system"
+
+Codex 支持 cwd，不需要 PYTHONPATH。
+
+
+Trae
+~~~~
+
+Trae 有自己的 MCP 配置系统，不在此文件范围内。参考 Trae IDE 的 usrlocalmcp 配置。

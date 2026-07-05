@@ -1,0 +1,32 @@
+# 情绪策略配置
+name: sentiment
+description: 情绪策略 — 基于 LLM 社交/新闻情绪的信号映射
+
+# 情绪来源权重
+sentiment_sources:
+  social: 0.4           # 社交群聊情绪
+  news: 0.6             # 新闻情绪
+
+# 信号参数
+bullish_threshold: 0.6      # bull_ratio > 60% → 看多信号
+bearish_threshold: 0.6      # bear_ratio > 60% → 看空信号
+min_confidence: 0.3         # 最小置信度
+max_signal_strength: 0.6    # 情绪策略最大信号强度 (情绪是辅助信号)
+
+# 反指规则
+contrarian_mode: true       # 散户高度一致时启用反指
+contrarian_bull_threshold: 0.8   # bull_ratio > 80% → 反指看空
+contrarian_bear_threshold: 0.8   # bear_ratio > 80% → 反指看多
+
+# 衰减参数
+decay_hours: 24             # 情绪信号衰减时间
+min_decay: 0.2
+
+# 仓位参数
+max_position_pct: 0.03      # 情绪策略仓位上限 (辅助策略)
+target_positions: 5
+rebalance_freq: daily
+
+# 风控参数
+max_drawdown: -0.03
+daily_loss_limit: -0.01
