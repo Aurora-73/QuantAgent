@@ -122,7 +122,7 @@ def main():
     if python_cmd is None:
         python_cmd = "python"
     
-    result = run_command(f"{python_cmd} verify_project.py", cwd=current_dir, check=False)
+    result = run_command(f"{python_cmd} scripts/verify_project.py", cwd=current_dir, check=False)
     print(result.stdout)
     if result.stderr:
         print(result.stderr)
