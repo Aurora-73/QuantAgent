@@ -12,11 +12,38 @@ from data.storage import DataStorage
 from research.factors import FactorEngine
 
 
-def get_quote(ticker: str) -> str:
-    """获取指定股票的最新行情数据"""
+def _resolve_ticker(ticker: str) -> str:
+    """补齐6位股票代码（去掉 .SS/.SZ 后缀）"""
+    t = ticker.strip().upper().replace(".SS", "").replace(".SZ", "")
+    return t.zfill(6)
+
+
+def _load_or_fetch(ticker: str, days: int = 365) -> pd.DataFrame:
+    """先从 DB 加载，没有则自动从数据源拉取并保存。返回空 DataFrame 表示完全不可获取。"""
+    storage = DataStorage()
+    start = (date.today() - timedelta(days=days)).isoformat()
+    df = storage.load_stock_daily(ticker, start_date=start)
+    if not df.empty:
+        return df
+    # 自动从数据源拉取
     try:
-        storage = DataStorage()
-        df = storage.load_stock_daily(ticker)
+        from data.provider import DataProvider
+        from data.cleaner import DataCleaner
+        df_new = DataProvider.get_stock_daily(ticker, start_date=start)
+        if not df_new.empty:
+            df_new = DataCleaner.clean_ohlcv(df_new)
+            storage.save_stock_daily(ticker, df_new)
+            return storage.load_stock_daily(ticker, start_date=start)
+    except Exception:
+        pass
+    return pd.DataFrame()
+
+
+def get_quote(ticker: str) -> str:
+    """获取指定股票的最新行情数据（自动从数据源拉取）"""
+    try:
+        ticker = _resolve_ticker(ticker)
+        df = _load_or_fetch(ticker, days=60)
         if df.empty:
             return json.dumps({"error": f"无数据: {ticker}"}, ensure_ascii=False)
         latest = df.iloc[-1]
@@ -38,11 +65,10 @@ def get_quote(ticker: str) -> str:
 
 
 def get_history(ticker: str, days: int = 60) -> str:
-    """获取股票历史行情数据"""
+    """获取股票历史行情数据（自动从数据源拉取）"""
     try:
-        storage = DataStorage()
-        start = (date.today() - timedelta(days=days)).isoformat()
-        df = storage.load_stock_daily(ticker, start_date=start)
+        ticker = _resolve_ticker(ticker)
+        df = _load_or_fetch(ticker, days=days)
         if df.empty:
             return json.dumps({"error": f"无数据: {ticker}"}, ensure_ascii=False)
         # compute pct_change on-the-fly

@@ -227,6 +227,114 @@ python -m scripts show-knowledge --type events
 
 ---
 
+### 5. batch_backtest — 批量策略回测
+
+**用途**：对所有策略进行批量回测验证，结果写入数据库。
+
+**语法**：
+```bash
+python -m scripts.batch_backtest [--strategy <name>] [--ticker <code>] [--limit <N>] [--output <file>]
+```
+
+**参数**：
+
+| 参数 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `--strategy` | string | 全部 | 策略名称：momentum/reversal/sentiment/regime_switch |
+| `--ticker` | string | 20只 | 指定股票代码 |
+| `--all-tickers` | flag | false | 回测全部标的 |
+| `--limit` | int | 20 | 标的数量限制 |
+| `--output` | string | 无 | 输出 JSON 文件路径 |
+
+**示例**：
+```bash
+# 回测所有策略（默认 20 只股票）
+python -m scripts.batch_backtest
+
+# 回测单个策略
+python -m scripts.batch_backtest --strategy momentum
+
+# 输出 JSON
+python -m scripts.batch_backtest --output results.json
+```
+
+### 6. evaluate_factors — 因子评估
+
+**用途**：计算所有因子的 IC/ICIR/分组收益，写入 factor_evaluation 表。
+
+```bash
+python -m scripts.evaluate_factors
+```
+
+### 7. run_stress_test — 压力测试
+
+**用途**：在 4 个历史危机场景下测试股票表现。
+
+```bash
+python -m scripts.run_stress_test --universe csi300
+```
+
+**场景**：2015 股灾 (-49%)、2018 熊市 (-32%)、2020 疫情 (-15%)、2024 流动性危机 (-11%)
+
+### 8. run_brinson_attribution — Brinson 归因
+
+**用途**：将超额收益分解为配置效应、选股效应和交互效应。
+
+```bash
+python -m scripts.run_brinson_attribution
+```
+
+### 9. health_check — 系统健康检查
+
+**用途**：检查数据库连接、数据时效、因子覆盖、磁盘空间等。
+
+```bash
+python -m scripts.health_check            # 表格输出
+python -m scripts.health_check --json     # JSON 输出
+```
+
+### 10. db_stats — 数据库统计
+
+**用途**：查看所有表的行数统计。
+
+```bash
+python -m scripts.db_stats
+```
+
+### 11. scheduler — 定时调度器
+
+**用途**：定时执行每日研究流程。
+
+```bash
+python -m scripts.scheduler              # 前台运行
+python -m scripts.scheduler --dry-run     # 查看计划
+python -m scripts.scheduler --run-now     # 立即执行一次
+bash scripts/run_scheduler.sh             # 后台启动
+bash scripts/stop_scheduler.sh            # 停止
+```
+
+### 12. test_p1 — P1 验证测试
+
+**用途**：验证所有核心组件是否正常工作。
+
+```bash
+python -m scripts.test_p1
+```
+
+通过标准：10/10 全部通过。
+
+### 13. MCP Server
+
+**用途**：启动 MCP Server，暴露 32 个工具供外部 Agent 调用。
+
+```bash
+python -m mcp_server.server               # stdio 模式（默认）
+python -m mcp_server.server --sse --port 8080  # SSE 模式
+python -m mcp_server.server --list-tools   # 列出所有工具
+```
+
+---
+
 ## 快捷命令
 
 ### 验证环境

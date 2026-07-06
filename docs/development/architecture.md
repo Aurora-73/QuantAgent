@@ -1,6 +1,8 @@
 # LLM 辅助量化交易系统架构设计
 
-> 核心哲学：AI 不负责"猜涨跌"，AI 负责"提高整个研究链路的效率和质量"
+> **2026-07-06 架构定位更新**：本项目定位为 **MCP Server**，将量化研究能力（行情/因子/回测/风控/知识库）暴露为 32 个 MCP 工具，供 Claude/Codex/外部 Agent 调用。LLM 能力由调用方提供，系统内部不内置 LLM。
+
+> 核心哲学：传统量化引擎做交易主干，LLM 只做研究和信息处理，不直接决定下单。
 > 设计目标：一个个人可实现的 Agent 基金公司
 > 设计日期：2026-06-03
 
@@ -24,6 +26,56 @@
 │  │  新闻分析师 │ 基本面分析师 │ 技术分析师 │ 风控官 │ 投资委员会   │     │
 │  └───────────────────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 一、MCP 工具层（当前核心定位）
+
+系统以 **MCP Server** 模式运行，通过 `mcp_server/server.py` 暴露 32 个工具，分为 3 组：
+
+| 模块 | 工具数 | 功能 | 文件 |
+|------|--------|------|------|
+| Data Tools | 12 | 行情查询、历史数据、因子、指数、日历，含自动数据拉取 | `mcp_server/tools_data.py` |
+| Risk Tools | 10 | 回测、压力测试、Brinson 归因、衰减检测、健康检查 | `mcp_server/tools_risk.py` |
+| Knowledge Tools | 10 | 日报搜索、事件检索、Wiki 检索、决策记忆、预测准确率 | `mcp_server/tools_knowledge.py` |
+
+其中 3 个为 **写操作工具**（`readOnlyHint: false`）：`run_backtest`、`update_data`、`run_daily_research`。
+
+### MCP 集成方式
+
+```
+Feishu/Telegram/Slack → cc-connect → Claude Code → MCP Server → DuckDB + baostock/AKShare
+```
+
+1. 外部 Agent（Claude Code）通过 `.mcp.json` 配置发现 MCP Server
+2. MCP Server 通过 stdio 子进程方式运行
+3. 工具函数自动处理数据缺失：DB 无数据时自动从 baostock/AKShare 拉取
+
+### 配置方法
+
+`.mcp.json` 位于项目根目录：
+
+```json
+{
+  "mcpServers": {
+    "QuantSystem": {
+      "command": "/path/to/.venv/bin/python",
+      "args": ["-m", "mcp_server.server"],
+      "cwd": "/path/to/quant-system",
+      "env": {
+        "PYTHONPATH": "/path/to/quant-system",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}
+```
+
+查看全部工具：
+```bash
+cd quant-system && source .venv/bin/activate
+python -m mcp_server.server --list-tools
 ```
 
 ---

@@ -113,6 +113,7 @@ wiki/                            ← 交易方法论库
 | 查看当前状态 | `project/project-status.md` |
 | 开发新策略 | `development/strategy_development.md` |
 | 开发新因子 | `development/factor_development.md` |
+| 查看 MCP 工具清单 | 运行 `python -m mcp_server.server --list-tools` |
 | 查看所有 CLI 命令 | `reference/cli_reference.md` |
 | 修改配置参数 | `reference/configuration.md` |
 | 排查问题 | `runbook/troubleshooting.md` |

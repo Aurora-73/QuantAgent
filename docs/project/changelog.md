@@ -28,6 +28,10 @@
 - 修复 `health_check.py`：依赖检查异常崩溃（ImportError→Exception）
 - 修复 `run_p1.sh`：过期参数 --all 和不存在的模块名
 
+### 文档更新 + MCP 优化
+- MCP 工具自动数据拉取：get_quote/get_history 缺失股票自动从 baostock获取
+- 文档全面更新：CLAUDE.md（MCP 工具表+最新统计）、architecture.md（MCP 架构节）、cli_reference.md（新增7个命令文档）、project-status.md（最新DB统计）、docs/README.md（MCP引用）、quickstart.md（MCP引用）
+
 ### Phase 2 实施
 - P2.1: 安装 baostock 0.9.2，数据源测试全部 PASS
 - P2.2: scheduler --dry-run/--run-now 验证通过，创建 run/stop_scheduler.sh 管理脚本
