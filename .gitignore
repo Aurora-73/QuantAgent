@@ -2,6 +2,11 @@
 # Quant System — .gitignore
 # ============================================================
 
+# ---- Python Cache ----
+__pycache__/
+*.py[cod]
+*.so
+
 # ---- Environment & Secrets ----
 .env
 .env.local
@@ -43,6 +48,7 @@ data/raw/
 data/cache/
 data/*.db
 data/*.duckdb
+data/*.backup*
 knowledge/daily/
 knowledge/weekly/
 knowledge/monthly/
@@ -73,6 +79,7 @@ htmlcov/
 # ---- Temp Files ----
 *.tmp
 *.temp
+scripts/_*_temp.py
 
 # ---- Documentation ----
 docs/_build/
