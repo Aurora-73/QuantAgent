@@ -166,17 +166,14 @@ def get_db_stats() -> str:
 
 
 def get_social_sentiment(days: int = 1) -> str:
-    """获取社交情绪分析结果"""
+    """获取社交情绪分析结果
+
+    注意：社交情绪管道当前已后移（2026-07-06），
+    依赖 go-cqhttp 后端且原实现依赖内部 LLM 调用。
+    当前返回空数据和状态说明。
+    """
     try:
-        from llm.social_analyzer import SocialAnalyzer
-        analyzer = SocialAnalyzer()
-        from data.social_collector import SocialCollector
-        collector = SocialCollector()
-        msgs = collector.collect(timeout=3)
-        if not msgs:
-            return json.dumps({"count": 0, "message": "无消息"}, ensure_ascii=False)
-        result = analyzer.analyze(msgs)
-        # Also try to get from MarketFact DB
+        # 尝试从 MarketFact DB 读取历史数据（如有）
         from data.market_fact import FactStore
         store = FactStore()
         facts = store.query(fact_type="social_sentiment", limit=5)
@@ -189,11 +186,19 @@ def get_social_sentiment(days: int = 1) -> str:
                 "confidence": f.confidence,
             })
         return json.dumps({
-            "current": result,
+            "status": "disabled",
+            "message": "社交情绪管道已后移，当前不执行采集和分析",
+            "reason": "依赖 go-cqhttp 后端 + 内部 LLM 调用，架构定位调整为 MCP Server 后暂不维护",
             "recent_facts": fact_list,
+            "count": len(fact_list),
         }, ensure_ascii=False, default=str)
     except Exception as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
+        return json.dumps({
+            "status": "error",
+            "message": str(e),
+            "recent_facts": [],
+            "count": 0,
+        }, ensure_ascii=False)
 
 
 def search_hypotheses(limit: int = 20) -> str:

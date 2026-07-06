@@ -1,169 +1,82 @@
 # 未来计划
 
-> 生成日期：2026-07-03 | 基于 MCP 数据验证 + 健康检查结果
-> 核心问题：**代码完整，数据空转** — 4 个策略全部实现，但 events 为 0、predictions 仅 1 条、LLM 未配置
+> 生成日期：2026-07-03 | 最后更新：2026-07-06（Phase 2 计划更新）
+> 核心定位：**MCP Server** — 把量化研究能力暴露为工具供外部 Agent 调用
 
 ---
 
 ## 一、已完成工作回顾
 
-近期完成 4 项集成 + 文档修正：
-
 | # | 事项 | 状态 | 说明 |
 |---|------|------|------|
-| 1 | **基本面存储** | ✅ | baostock 财务数据 → DuckDB research.financials 表 |
-| 2 | **基本面因子** | ✅ | 新增 4 因子（ROE/PE_TTM/营收增速/净利润增速），共 29 因子 |
-| 3 | **行业中性化** | ✅ | 截面 OLS 回归中性化（行业哑变量 + log市值） |
-| 4 | **新闻接入** | ✅ | AKShare 真实新闻（东方财富+财联社），日报已启用 |
-| 5 | **文档审计修正** | ✅ | 修正策略/执行/风控/Event 模型描述 |
+| 1 | **架构定位** | ✅ | 确定为 MCP Server，移除内部 LLM 调用 |
+| 2 | **Phase 0** | ✅ | 股票池 300→301 只、事件冷启动 106 条、LLM 模块清理 |
+| 3 | **基本面存储+因子** | ✅ | baostock → DuckDB，新增 ROE/PE/营收/利润 4 因子 |
+| 4 | **行业中性化** | ✅ | 截面 OLS 回归中性化（行业哑变量 + log市值） |
+| 5 | **新闻接入** | ✅ | AKShare 东方财富+财联社，日报已启用 |
+| 6 | **Phase B 管线** | ✅ | MarketRegimeDetector / WikiRetriever / FusionEngine / AgentCommittee |
+| 7 | **Phase 1 验证** | ✅ | P1 流水线跑通（10/10 组件测试，全流程运行正常） |
+| 8 | **文档整理** | ✅ | 旧文档清理 + CLAUDE.md 重写 + docs/README.md 索引 + 归档 |
+
+**当前数据库状态**：
+
+| 指标 | P1 验证后 |
+|------|----------|
+| stock_daily | 452,054 行 / 301 只 |
+| factors | 11,354,151 行 / 33 因子 |
+| index_daily | 7,515 行 |
+| events | 106 条 |
+| decision_memory | 8 条 |
+| backtest_runs | 32 条 |
+| 单元测试 | 122/122 通过 |
+| 健康检查 | 7 pass, 1 warn, 0 fail |
 
 ---
 
-## 二、当前真实状态（来自 MCP 数据）
+## 二、当前执行阶段：Phase 2
 
-### 数据快照
+> 详细计划见 [`docs/plan/phase-2-implementation-plan.md`](../plan/phase-2-implementation-plan.md)
 
-| 指标 | 值 | 评价 |
-|------|----|------|
-| 股票池 | **289 只** | ⚠️ 缺 11 只达沪深 300 |
-| 日线数据 | 187,482 | ✅ |
-| 因子数据 | 675,664 | ✅ |
-| 策略数量 | 4/4 完整 | ✅ |
-| 回测次数 | 21 | ✅ 已在使用 |
-| **事件数据** | **0** | ❌ **事件驱动策略无输入** |
-| **预测数据** | **1** | ❌ **预测闭环未启动** |
-| **决策记忆** | **3** | ❌ **极少使用** |
-| **LLM API** | **未配置** | ❌ **阻塞 AI 分析/抽取/日报** |
+| # | 任务 | 预计耗时 | 说明 |
+|---|------|---------|------|
+| P2.1 | **baostock 稳定数据源** | 15min | 替换 AKShare 间歇性失败 |
+| P2.2 | **定时调度器跑通** | 2h | 日终自动研究流程 + 告警对接 SendChan |
+| P2.3 | **4 策略样本外回测验证** | 3-4h | 批量回测 + 结果入库，支持 --compare |
+| P2.4 | **MCP 写工具** | 2h | run_backtest / update_data / daily_research |
+| P2.5 | **Walk-Forward CLI** | 3h | 参数扫描命令行入口 + JSON 输出 |
 
-### 健康检查结果
+### 验收标准
 
-| 检查项 | 状态 |
-|--------|------|
-| 数据库连接 | ✅ |
-| 数据时效 | ✅ 最新 2026-07-02 |
-| **数据完整性** | ⚠️ 仅 289 只 |
-| 因子覆盖 | ✅ 29 因子 |
-| **LLM API** | ⚠️ 未配置 |
-| 数据源 | ✅ AKShare 正常 |
-| 回测持久化 | ✅ |
-| 磁盘空间 | ✅ 593GB 可用 |
-| 依赖完整性 | ✅ |
+- [ ] P2.1: baostock 安装并验证通过
+- [ ] P2.2: scheduler --dry-run 输出正确，--run-now 完成一次流程
+- [ ] P2.2: 告警对接 SendChan 成功
+- [ ] P2.3: 4 策略批量回测脚本可用，结果写入 backtest_runs 表
+- [ ] P2.4: MCP run_backtest / update_data 工具可用
+- [ ] P2.5: walkforward CLI 命令可用，参数扫描输出有效
+- [ ] **整体**：健康检查 8 pass, 0 warn, 0 fail
 
 ---
 
-## 三、主要短板
+## 三、后续阶段
 
-### P0 — 阻塞
-
-1. **LLM API Key 未配置** — 事件抽取、日报生成、AI 分析全部不可用
-2. **事件表为空** — 0 条事件，event_driven 策略无输入，sentiment 策略无历史数据
-3. **股票池不完整** — 289/300，因子和回测样本不足
-
-### P1 — 高优先级
-
-4. **预测/决策循环未启动** — 仅 1 条预测、3 条决策记录，验证闭环不通
-5. **无定时执行** — scheduler.py 从未跑通
-6. **告警空壳** — webhook 通知是空函数 `pass`
-
-### P2 — 中优先级
-
-7. **print 残留** — 部分模块仍用 print 而非 logger
-8. **引擎/适配器双轨** — Qlib/TradingAgents/vnpy 各两套代码
-9. **Wiki 内容偏少** — 仅 6 个条目
-10. **基本面数据不完整** — 仅 1 只股票 financials
+| # | 事项 | 说明 | 前置 |
+|---|------|------|------|
+| C-1 | **MCP 写工具深化** | 策略配置变更、参数调整 | P2.4 |
+| C-2 | **AICriticAgent LLM 接入** | 委员会 LLM 模式 | — |
+| C-3 | **社交情绪管道** | go-cqhttp → LLM 情绪分析 | 外部后端 |
+| C-4 | **Wiki 知识库构建** | 持续构建量化知识图谱 | — |
+| C-5 | **数据分层重构** | raw/cleaned/research/published 分离 | — |
+| C-6 | **集成适配器统一** | 废弃旧 engine，统一 adapter | — |
 
 ---
 
-## 四、调整后的执行路线图
-
-### Phase 0：数据就绪（约 7h）
-
-核心思路：先把数据跑满、把 Key 配上、让系统真正转起来。
-
-| # | 事项 | 工作量 | 说明 |
-|---|------|--------|------|
-| 0.1 | **配置 LLM API Key** | 0.5h | `.env` 中配置 openai_api_key，验证 `report_agent.py` 可调用 |
-| 0.2 | **补齐股票池到 CSI300** | 1h | `python -m scripts update-data --universe csi300`，验证 `COUNT(DISTINCT ticker)` = 300 |
-| 0.3 | **事件数据冷启动** | 2h | news/aggregator 拉取历史新闻 → LLM 抽取事件 → 写入 events 表 |
-| 0.4 | **print→logger 替换** | 0.5h | research/factors.py, backtest.py, scripts/ 中 ~20 处 |
-| 0.5 | **补 scheduler 配置 + 启用** | 1h | settings.py + 在真实数据上跑通定时流程 |
-| 0.6 | **批量拉取基本面数据** | 1h | 对沪深 300 运行 update_fundamentals |
-| 0.7 | **daily-research 全流程验证** | 1h | 含 LLM 模式的日报生成验证 |
-
-**成功标准**：
-- `COUNT(DISTINCT ticker)` = 300
-- `events` 表 > 0 条
-- `python -m scripts daily-research` 含 LLM 输出成功
-- health check 9/9 通过
-
-### Phase B：闭环验证（约 18h）
-
-核心思路：让所有数据流跑通，回测可对比、预测可验证、异常可告警。
-
-| # | 事项 | 工作量 | 说明 |
-|---|------|--------|------|
-| B-1 | **回测持久化增强 + CLI** | 3h | backtest_runs 表已存在，`--compare` 和 `--output json` |
-| B-2 | **Walk-Forward CLI 接入** | 4h | WFO 引擎已存在，接入 backtest CLI |
-| B-3 | **预测追踪 + 决策记忆启动** | 3h | 每日预测写入 + 次日收益回填，启动验证闭环 |
-| B-4 | **告警实现** | 1h | webhook/邮件通知补全 |
-| B-5 | **三层风控接入主流程** | 2h | 压力测试 + Brinson + 衰减检测接入 daily_research |
-| B-6 | **数据质量监控** | 2h | 因子覆盖率、新鲜度、异常值检测 |
-| B-7 | **策略回测验证** | 3h | 4 个策略在沪深 300 上样本外回测，记录基准 Sharpe |
-
-**成功标准**：
-- `--compare last_3` 显示 3 条不同日期的回测记录
-- `predictions` 表增量增长且 `previous_prediction_correct` 回填
-- 告警在因子衰减时触发
-- 4 个策略有基准回测指标
-
-### Phase C：能力深化（约 18h）
-
-| # | 事项 | 工作量 | 说明 |
-|---|------|--------|------|
-| C-1 | **MCP 写操作工具** | 3h | 回测触发、策略配置变更（需权限确认） |
-| C-2 | **AICriticAgent LLM 接入** | 3h | 委员会 LLM 模式 |
-| C-3 | **社交情绪管道** | 5h | QQ/微信群聊 → go-cqhttp → LLM 情绪分析 → 多空倾向评分 → MarketFact，包含情绪强度、观点聚类、影响力分析 |
-| C-4 | **LLM Wiki 知识库构建** | 持续 | 构建量化知识图谱：entities（策略/因子/指标）、scenarios（市场场景）、sources（经典策略）、synthesis（策略对比），给 AI 提供专业领域知识 |
-| C-5 | **数据分层重构** | 3h | raw/cleaned/research/published schema 分离 |
-| C-6 | **集成适配器统一** | 3h | 废弃旧 engine 接口，统一 adapter 模式 |
-
----
-
-## 五、建议优先级
+## 四、当前建议优先级
 
 ```
-本周（P0，7h）
-  ├── 配置 LLM API Key              — AI 能力前提
-  ├── 补齐股票池到 CSI300            — 数据完整性
-  ├── 事件数据冷启动                 — 策略输入源
-  ├── print→logger 替换              — 维护性
-  ├── scheduler 启用                 — 自动化
-  ├── 批量基本面数据                  — 因子质量
-  └── daily-research 全流程验证       — 验收基线
-
-下周（P1，18h）
-  ├── 回测持久化增强                  — 实验管理
-  ├── Walk-Forward CLI               — 回测可信度
-  ├── 预测追踪 + 决策记忆             — 验证闭环
-  ├── 告警实现                       — 异常通知
-  ├── 三层风控接入主流程               — 风险管控
-  ├── 数据质量监控                    — 数据健康
-  └── 策略回测验证                    — 策略可信度
-
-后续（P2，18h）
-  ├── MCP 写操作工具                  — Claude Code 效率
-  ├── AICriticAgent LLM 接入         — AI 增强
-  ├── 社交情绪管道                    — 依赖 go-cqhttp
-  ├── 数据分层重构                    — 大规模重构
-  ├── 适配器统一                      — 清理技术债
-  └── Wiki 内容填充                   — 锦上添花
+Phase 2（~10h）
+  ├── P2.1 baostock 安装      — 数据源稳定
+  ├── P2.2 scheduler 调度器    — 自动化
+  ├── P2.3 策略回测验证        — 可验证
+  ├── P2.4 MCP 写工具          — Agent 可操作
+  └── P2.5 Walk-Forward CLI    — 参数优化
 ```
-
----
-
-## 六、不做（显式排除）
-
-1. **实盘自动下单** — 至少 Phase E+
-2. **高频/分钟级回测** — 保持日频为主
-3. **Web UI / SaaS** — CLI + MCP 优先
-4. **Rust 重写核心引擎** — Python 在当前规模下足够

@@ -17,6 +17,23 @@
 - 清理 plan/ 目录，归档已完成项
 - 更新项目状态报告
 
+### 文档大整理（2026-07-06 第二批次）
+- 删除根目录过时文档：`介绍.md`（复制的 MCP 文档）、`提示词.md`（空文件）
+- 归档 `runbook/phase-0-issues.md` → `plan/archive/`（Phase 0 已完成）
+- 重写 `CLAUDE.md`：MCP Server 定位、最新数据库统计、完整命令参考
+- 更新 `project-status.md`：数据库行数（452K→11.3M factors）、数据统计同步
+- 创建 `docs/README.md`：文档索引 + 管理规范 + 快速导航
+- 创建 `plan/phase-2-implementation-plan.md`：Phase 2 详细实施计划（5 个任务，含步骤/验收/风险）
+- 重写 `project/roadmap.md`：反映 P1 完成后现状，指向 Phase 2 计划
+- 修复 `health_check.py`：依赖检查异常崩溃（ImportError→Exception）
+- 修复 `run_p1.sh`：过期参数 --all 和不存在的模块名
+
+### Phase 2 实施
+- P2.1: 安装 baostock 0.9.2，数据源测试全部 PASS
+- P2.2: scheduler --dry-run/--run-now 验证通过，创建 run/stop_scheduler.sh 管理脚本
+- P2.3: 创建 batch_backtest.py 批量回测脚本，4 策略 10 只股票验证通过（40/40），结果写入 backtest_runs 表（32→73 条）
+- P2.4: MCP 新增 2 个写工具（update_data / run_daily_research），安装 fastmcp，工具总数 30→32
+
 ## 2026-07-03
 
 ### 文档整理与重构

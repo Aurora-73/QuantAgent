@@ -463,7 +463,7 @@ class DataStorage:
 
         df["date"] = pd.to_datetime(df["date"]).dt.date
 
-        # public 表（向后兼容）— 先删除该股票所有数据，再插入（避免索引删除问题）
+        # public 表（向后兼容）— 先删除该股票所有数据，再插入
         self.conn.execute("DELETE FROM stock_daily WHERE ticker = ?", [ticker])
         self.conn.execute("""
             INSERT INTO stock_daily
@@ -994,13 +994,13 @@ class DataStorage:
 
         # public 表
         self.conn.execute("""
-            INSERT OR REPLACE INTO backtest_runs
+            INSERT INTO backtest_runs
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         """, bt_values)
 
         # published 分层表
         self.conn.execute("""
-            INSERT OR REPLACE INTO published.backtest_runs
+            INSERT INTO published.backtest_runs
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         """, bt_values)
 
@@ -1021,11 +1021,11 @@ class DataStorage:
         df["date"] = pd.to_datetime(df["date"]).dt.date
 
         self.conn.execute("""
-            INSERT OR REPLACE INTO backtest_equity
+            INSERT INTO backtest_equity
             SELECT run_id, date, equity_value FROM df
         """)
         self.conn.execute("""
-            INSERT OR REPLACE INTO published.backtest_equity
+            INSERT INTO published.backtest_equity
             SELECT run_id, date, equity_value FROM df
         """)
 

@@ -95,7 +95,6 @@ def update_fundamentals(
     q_name = quarter_names.get(quarter, f"Q{quarter}")
 
     logger.info(f"基本面数据更新 - {year}年 {q_name}")
-    logger.info(f"股票数量: {len(tickers)}")
 
     # 获取股票列表
     if tickers is None:
@@ -105,6 +104,8 @@ def update_fundamentals(
         except Exception:
             logger.error("获取成分股失败，请指定 --tickers")
             return
+    else:
+        logger.info(f"股票数量: {len(tickers)}")
 
     storage = DataStorage()
     success = 0
@@ -151,5 +152,5 @@ if __name__ == "__main__":
     parser.add_argument("--quarter", type=int, default=None, help="季度 (1-4)")
     args = parser.parse_args()
 
-    tickers = args.tickers.split(",") if args.tickers else None
+    tickers = [t.strip().zfill(6) for t in args.tickers.split(",")] if args.tickers else None
     update_fundamentals(tickers, args.year, args.quarter)

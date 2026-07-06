@@ -52,7 +52,7 @@ mcp = FastMCP("quant-system", log_level="WARNING")
 
 
 # ============================================================
-# Data Tools (7, read-only)
+# Data Tools (9, read-only)
 # ============================================================
 
 mcp.tool(
@@ -108,6 +108,18 @@ mcp.tool(
     description="运行因子评估（IC/ICIR/评分）",
     annotations={"readOnlyHint": True},
 )(tools_data.run_factor_evaluation)
+
+mcp.tool(
+    name="update_data",
+    description="更新行情数据（从 AKShare/baostock 拉取最新数据并写入数据库）。注意：写操作，耗时 15-30 分钟。",
+    annotations={"readOnlyHint": False},
+)(tools_data.update_data)
+
+mcp.tool(
+    name="run_daily_research",
+    description="运行每日研究流程（数据更新→因子计算→新闻采集→日报生成）。注意：写操作，耗时 5-15 分钟。",
+    annotations={"readOnlyHint": False},
+)(tools_data.run_daily_research)
 
 # ============================================================
 # Risk & Strategy Tools (10, read-only)
@@ -247,6 +259,37 @@ mcp.tool(
 # Main
 # ============================================================
 
+def list_tools():
+    """列出所有已注册的 MCP 工具，作为工具数量的事实来源。
+
+    用法：python -m mcp_server.server --list-tools
+    """
+    if not hasattr(mcp, '_tool_manager'):
+        print("ERROR: mcp._tool_manager 不可用（fastmcp 版本不兼容）")
+        sys.exit(1)
+
+    tools = mcp._tool_manager._tools
+    print(f"# MCP 工具清单（共 {len(tools)} 个）")
+    print()
+    print(f"{'#':>3}  {'name':<28}  {'readonly':<8}  description")
+    print("-" * 100)
+    for i, (name, tool) in enumerate(sorted(tools.items()), 1):
+        desc = (tool.description or "").replace("\n", " ")[:60]
+        annotations = getattr(tool, 'annotations', None)
+        # FastMCP annotations 是 ToolAnnotations pydantic 对象，用 model_dump() 转 dict
+        if annotations is None:
+            readonly = "no"
+        elif isinstance(annotations, dict):
+            readonly = "yes" if annotations.get("readOnlyHint") else "no"
+        elif hasattr(annotations, 'model_dump'):
+            readonly = "yes" if annotations.model_dump().get("readOnlyHint") else "no"
+        else:
+            readonly = "yes" if getattr(annotations, 'readOnlyHint', False) else "no"
+        print(f"{i:>3}  {name:<28}  {readonly:<8}  {desc}")
+    print()
+    print(f"总计: {len(tools)} 个工具")
+
+
 def main():
     if not HAS_FASTMCP:
         print("fastmcp 未安装: pip install fastmcp")
@@ -256,9 +299,15 @@ def main():
     parser = argparse.ArgumentParser(description="MCP Server for Quant System")
     parser.add_argument("--sse", action="store_true", help="Use SSE transport (default: stdio)")
     parser.add_argument("--port", type=int, default=8080, help="SSE port")
+    parser.add_argument("--list-tools", action="store_true",
+                        help="List all registered tools and exit (不启动 server)")
     args = parser.parse_args()
 
-    tool_count = len(mcp._tool_manager._tools) if hasattr(mcp, '_tool_manager') else 24
+    if args.list_tools:
+        list_tools()
+        return
+
+    tool_count = len(mcp._tool_manager._tools) if hasattr(mcp, '_tool_manager') else 0
     logger.info(f"MCP server ready: {tool_count} tools registered")
 
     if args.sse:

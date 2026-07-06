@@ -111,5 +111,5 @@ if __name__ == "__main__":
     parser.add_argument("--end", default=None, help="结束日期")
     args = parser.parse_args()
 
-    tickers = args.tickers.split(",") if args.tickers else None
+    tickers = [t.strip().zfill(6) for t in args.tickers.split(",")] if args.tickers else None
     update_data(args.universe, tickers, args.start, args.end)

@@ -207,9 +207,10 @@ WHERE EXISTS (SELECT 1 FROM lessons LIMIT 1)
 -- ============================================================
 
 -- raw.stock_daily doesn't have a PK to allow duplicate ingestion;
--- add a covering index for common query patterns
-CREATE INDEX IF NOT EXISTS idx_raw_stock_daily_ticker_date
-    ON raw.stock_daily (ticker, date);
+-- NOTE: 索引暂时禁用，DuckDB 1.5.4 在带索引的表上执行 DELETE 时会出现
+-- "Failed to delete all rows from index" 错误，等 DuckDB 修复后再开启
+-- CREATE INDEX IF NOT EXISTS idx_raw_stock_daily_ticker_date
+--     ON raw.stock_daily (ticker, date);
 
 CREATE INDEX IF NOT EXISTS idx_raw_index_daily_code_date
     ON raw.index_daily (index_code, date);

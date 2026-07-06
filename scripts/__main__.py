@@ -6,6 +6,7 @@ Quant System CLI
     python -m scripts daily-research       # 运行每日研究
     python -m scripts backtest             # 运行回测
     python -m scripts show-knowledge       # 查看知识库
+    python -m scripts health-check         # 系统健康检查
 """
 import sys
 import argparse
@@ -44,11 +45,15 @@ def main():
     kb_parser.add_argument("--limit", type=int, default=10)
     kb_parser.add_argument("--date", default=None)
 
+    # health-check
+    health_parser = subparsers.add_parser("health-check", help="系统健康检查")
+    health_parser.add_argument("--json", action="store_true", help="JSON 输出")
+
     args = parser.parse_args()
 
     if args.command == "update-data":
         from scripts.update_data import update_data
-        tickers = args.tickers.split(",") if args.tickers else None
+        tickers = [t.strip().zfill(6) for t in args.tickers.split(",")] if args.tickers else None
         update_data(args.universe, tickers, args.start)
 
     elif args.command == "daily-research":
@@ -64,6 +69,16 @@ def main():
     elif args.command == "show-knowledge":
         from scripts.show_knowledge import show_knowledge
         show_knowledge(args.type, args.limit, args.date)
+
+    elif args.command == "health-check":
+        from scripts.health_check import HealthChecker
+        import json
+        checker = HealthChecker()
+        results = checker.check_all()
+        if args.json:
+            print(json.dumps(results, ensure_ascii=False, indent=2))
+        failed = sum(1 for r in results if r["status"] == "fail")
+        sys.exit(1 if failed > 0 else 0)
 
     else:
         parser.print_help()

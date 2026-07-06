@@ -190,27 +190,12 @@ class HealthChecker:
     # ============================================================
 
     def _check_llm_api(self):
-        if not settings.openai_api_key:
-            self._add_result("LLM API", "warn",
-                           "未配置 OPENAI_API_KEY",
-                           "在 .env 中设置 openai_api_key")
-            return
-
-        try:
-            from openai import OpenAI
-            client = OpenAI(
-                api_key=settings.openai_api_key,
-                base_url=settings.openai_base_url,
-            )
-            # Lightweight check: list models
-            models = client.models.list()
-            model_ids = [m.id for m in models.data[:5]]
-            self._add_result("LLM API", "pass",
-                           f"连接正常, 可用模型: {', '.join(model_ids[:3])}")
-        except Exception as e:
-            self._add_result("LLM API", "warn",
-                           f"连接异常: {str(e)[:80]}",
-                           "检查 API Key 和网络连接")
+        self._add_result(
+            "LLM API",
+            "skip",
+            "已废弃（项目定位为 MCP Server，内部不调用 LLM）",
+            "LLM 调用由外部 Agent 通过 MCP 工具提供",
+        )
 
     # ============================================================
     # Check 6: Data Source (AKShare)
@@ -309,7 +294,7 @@ class HealthChecker:
         for pkg in optional:
             try:
                 __import__(pkg)
-            except ImportError:
+            except Exception:
                 missing_optional.append(pkg)
 
         if missing_critical:

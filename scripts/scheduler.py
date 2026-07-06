@@ -73,7 +73,8 @@ def run_daily_pipeline():
 
     try:
         from scripts.daily_research import run_daily_research
-        run_daily_research(target_date=date.today(), use_llm=True)
+        # 2026-07-06: 架构定位调整为 MCP Server，不再内部调用 LLM
+        run_daily_research(target_date=date.today(), use_llm=False)
         logger.success("定时每日研究完成")
     except Exception as e:
         logger.error(f"定时每日研究失败: {e}")

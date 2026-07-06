@@ -67,7 +67,18 @@ class Settings(BaseSettings):
     default_index_code: str = "000300"
 
     # ============================================================
-    # LLM
+    # Scheduler
+    # ============================================================
+    schedule_data_update_time: str = "15:30"
+    schedule_research_time: str = "16:00"
+    schedule_timezone: str = "Asia/Shanghai"
+
+    # ============================================================
+    # LLM — 已废弃（2026-07-06）
+    #
+    # 项目定位调整为 MCP Server，LLM 调用由外部 Agent 提供，
+    # 不在 quant-system 内部调用 LLM API。以下配置保留以兼容
+    # 旧代码，实际不再使用。
     # ============================================================
     openai_api_key: Optional[str] = None
     openai_base_url: Optional[str] = None
@@ -125,12 +136,6 @@ class Settings(BaseSettings):
     backtest_step: int = 21
     backtest_topk: int = 50
     backtest_n_drop: int = 5
-
-    # ============================================================
-    # Scheduler
-    # ============================================================
-    schedule_data_update_time: str = "15:30"
-    schedule_research_time: str = "16:00"
 
     # ============================================================
     # Factor evaluation

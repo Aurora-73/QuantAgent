@@ -48,8 +48,8 @@ class Alert:
 class AlertManager:
     """告警管理器"""
 
-    def __init__(self, webhook_url: str = None):
-        self.webhook_url = webhook_url
+    def __init__(self, notifier=None):
+        self.notifier = notifier
         self.alerts: list[Alert] = []
         self._counter = 0
 
@@ -74,7 +74,7 @@ class AlertManager:
         log_func(f"[{alert.level.value.upper()}] {alert.title}: {alert.detail}")
 
         # 发送通知
-        if self.webhook_url and level in (AlertLevel.WARNING, AlertLevel.CRITICAL):
+        if self.notifier and level in (AlertLevel.WARNING, AlertLevel.CRITICAL):
             self._send_notification(alert)
 
         return alert
@@ -147,6 +147,11 @@ class AlertManager:
                 break
 
     def _send_notification(self, alert: Alert):
-        """发送通知到外部服务"""
-        # TODO: 实现钉钉/微信/邮件通知
-        pass
+        """发送通知到外部服务（通过 notifier，默认使用 Server酱）"""
+        try:
+            if self.notifier is None:
+                from monitoring.notifier import SendChanNotifier
+                self.notifier = SendChanNotifier()
+            self.notifier.notify_alert(alert.alert_type.value, alert.detail)
+        except Exception as e:
+            logger.warning(f"告警通知发送失败: {e}")

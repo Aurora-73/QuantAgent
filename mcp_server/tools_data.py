@@ -241,13 +241,52 @@ def run_factor_evaluation(ticker: str = "600519", factor_name: str = "momentum_2
                 "overall_score": report["overall_score"],
                 "grade": report["grade"],
             }, ensure_ascii=False)
-        return json.dumps({
-            "ticker": ticker,
-            "factor": factor_name,
-            "ic": ic,
-            "icir": icir,
-            "overall_score": report["overall_score"],
-            "grade": report["grade"],
-        }, ensure_ascii=False)
     except Exception as e:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
+
+
+def update_data(universe: str = "csi300", start_date: str = "") -> str:
+    """更新行情数据。注意：此操作会从数据源拉取数据并写入数据库，耗时 15-30 分钟。"""
+    from scripts.update_data import update_data as _update_data
+    import io
+    from contextlib import redirect_stdout
+
+    start = start_date or "20200101"
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        try:
+            _update_data(universe=universe, start_date=start)
+            success = True
+        except Exception as e:
+            success = False
+            error = str(e)
+    stdout = buf.getvalue()
+    return json.dumps({
+        "success": success,
+        "message": "数据更新完成" if success else f"数据更新失败: {error}",
+        "stdout": stdout[:2000],
+    }, ensure_ascii=False)
+
+
+def run_daily_research(target_date: str = "") -> str:
+    """运行每日研究流程。注意：此操作会更新数据、计算因子、采集新闻、生成日报，耗时 5-15 分钟。"""
+    from scripts.daily_research import run_daily_research as _run_dr
+    from datetime import date
+    import io
+    from contextlib import redirect_stdout
+
+    target = date.fromisoformat(target_date) if target_date else date.today()
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        try:
+            _run_dr(target_date=target, use_llm=False)
+            success = True
+        except Exception as e:
+            success = False
+            error = str(e)
+    stdout = buf.getvalue()
+    return json.dumps({
+        "success": success,
+        "message": "每日研究流程完成" if success else f"运行失败: {error}",
+        "stdout": stdout[:2000],
+    }, ensure_ascii=False)

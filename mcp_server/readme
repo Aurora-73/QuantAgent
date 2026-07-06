@@ -1,11 +1,17 @@
 MCP Server — QuantSystem
 =========================
 
-30 MCP tools for Claude/Codex/Trae integration, organized as:
+MCP tools for Claude/Codex/Trae integration, organized as:
 
   tools_data.py      → 行情数据、报价、历史、因子、指数
   tools_risk.py      → 风险、压力测试、Brinson、衰减检测、回测
   tools_knowledge.py → 报告、事件、Wiki、决策、情绪
+
+工具数量不手写，事实来源：
+
+    python -m mcp_server.server --list-tools
+
+输出工具清单（名称 + readonly 标记 + 描述），当前 30 个（9 data + 10 risk + 11 knowledge）。
 
 
 配置步骤

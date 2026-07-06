@@ -3,10 +3,15 @@
 
 这是系统的核心工作流：
   1. 拉取最新数据
-  2. 计算因子
-  3. LLM 事件抽取
-  4. 生成日报
-  5. 存入知识库
+  2. 计算因子（含评估、衰减检测、中性化）
+  3. 新闻采集 + 结构化事件入库（非 LLM）
+  4. 生成简化日报
+  5. 存入知识库 + 预测追踪 + 决策记忆
+
+设计原则（2026-07-06 架构定位调整）：
+  - 本项目是 MCP Server，不在内部调用 LLM API
+  - 智能分析由外部 Agent 通过 MCP 工具完成
+  - 事件入库只做结构化归档，不做智能抽取
 
 用法：
     python -m scripts.daily_research
@@ -23,6 +28,9 @@ from loguru import logger
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import hashlib
+import json
+
 from data.provider import DataProvider
 from data.storage import DataStorage
 from data.cleaner import DataCleaner
@@ -34,8 +42,8 @@ from risk.decay_detector import DecayDetector
 from knowledge.knowledge_base import KnowledgeBase
 from knowledge.wiki_retriever import WikiRetriever
 from knowledge.decision_memory import DecisionMemory
-from llm.extractor import EventExtractor
-from llm.report_agent import ReportAgent
+# LLM 模块已废弃（2026-07-06）：项目定位调整为 MCP Server，
+# LLM 调用由外部 Agent 提供，不在 quant-system 内部调用。
 
 
 def run_daily_research(target_date: date = None,
@@ -404,70 +412,68 @@ def run_daily_research(target_date: date = None,
         logger.warning(f"  Agent委员会失败: {e}")
 
     # ============================================
-    # Step 3: 新闻采集 + LLM 事件抽取
+    # Step 3: 新闻采集 + 结构化事件入库（非 LLM）
     # ============================================
-    logger.info("[Step 3/5] 新闻采集与事件抽取")
+    logger.info("[Step 3/5] 新闻采集与结构化入库")
 
-    if use_llm:
-        try:
-            # 使用真实新闻源 (AKShare 东方财富)
-            from news.aggregator import collect_all_news
-            import os
-            # AKShare 不需要代理
-            for proxy_var in ["http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY"]:
-                os.environ.pop(proxy_var, None)
+    try:
+        from news.aggregator import collect_all_news
+        import os
+        for proxy_var in ["http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY"]:
+            os.environ.pop(proxy_var, None)
 
-            news_sources = collect_all_news(
-                tickers=tickers[:10] if tickers else None,
-                max_market=10,
-                max_per_ticker=3,
-                total_limit=30,
-            )
+        news_sources = collect_all_news(
+            tickers=tickers[:10] if tickers else None,
+            max_market=10,
+            max_per_ticker=3,
+            total_limit=30,
+        )
 
-            # 转换为文本列表供 EventExtractor 使用
-            if news_sources:
-                news_items = [
-                    f"[{s.source_name}] {s.title}"
-                    for s in news_sources
-                    if s.title.strip()
-                ]
-                logger.info(f"采集到 {len(news_items)} 条新闻")
-            else:
-                news_items = [
-                    f"[{date_str}] 市场今日震荡上行，沪深300收涨0.5%",
-                    f"[{date_str}] 北向资金今日净流入30亿元",
-                    f"[{date_str}] AI板块持续走强，多只个股涨停",
-                ]
-                logger.info("新闻采集为空，使用回退文本")
+        if news_sources:
+            logger.info(f"采集到 {len(news_sources)} 条新闻")
+            saved_count = 0
+            for s in news_sources:
+                if not s.title or not s.title.strip():
+                    continue
+                title_hash = hashlib.md5(s.title.encode("utf-8")).hexdigest()[:8]
+                ts = getattr(s, "published_at", None)
+                if ts is None:
+                    ts = date.today()
+                if hasattr(ts, "isoformat"):
+                    ts_str = ts.isoformat()
+                else:
+                    ts_str = str(ts)
+                ticker_val = getattr(s, "symbol", "") or getattr(s, "ticker", "")
+                source_val = getattr(s, "source_name", "akshare")
+                event = {
+                    "event_id": f"evt_{title_hash}",
+                    "timestamp": ts_str,
+                    "source": source_val,
+                    "event_type": "news",
+                    "ticker": ticker_val,
+                    "company": "",
+                    "detail": s.title,
+                    "sentiment": None,
+                    "impact_objects": [],
+                    "time_window": None,
+                    "confidence": 0.5,
+                    "tradability": None,
+                    "tags": ["news_cold_start"],
+                }
+                storage.save_event(event)
+                saved_count += 1
+            logger.success(f"结构化入库 {saved_count} 个新闻事件")
+        else:
+            logger.info("新闻采集为空，跳过事件入库")
+    except Exception as e:
+        logger.warning(f"新闻采集/入库失败: {e}")
 
-            extractor = EventExtractor()
-            events = extractor.extract_from_news(news_items, date_str)
-            for event in events:
-                kb.save_event(event)
-            logger.success(f"抽取 {len(events)} 个事件")
-        except Exception as e:
-            logger.warning(f"新闻/事件处理失败: {e}")
-            # Fallback: 仍用硬编码
-            try:
-                news_items = [
-                    f"[{date_str}] 市场今日震荡上行，沪深300收涨0.5%",
-                    f"[{date_str}] 北向资金今日净流入30亿元",
-                    f"[{date_str}] AI板块持续走强，多只个股涨停",
-                ]
-                extractor = EventExtractor()
-                events = extractor.extract_from_news(news_items, date_str)
-                for event in events:
-                    kb.save_event(event)
-                logger.success(f"回退: 抽取 {len(events)} 个事件")
-            except Exception as e2:
-                logger.warning(f"回退事件抽取也失败: {e2}")
-    else:
-        logger.info("[Step 3/5] LLM 事件抽取 (跳过)")
+    if not use_llm:
+        logger.info("[Step 3/5] (legacy --no-llm 标记：当前已无 LLM 调用)")
 
-    # Step 4: 生成日报
+    # Step 4: 生成日报（简化版，无 LLM）
     logger.info("[Step 4/5] 生成日报")
 
-    # 收集市场数据
     market_data = {"date": date_str}
     try:
         index_df = storage.load_index_daily("000300")
@@ -478,27 +484,11 @@ def run_daily_research(target_date: date = None,
     except Exception:
         pass
 
-    # 收集事件
     events = kb.load_events(start_date=date_str, limit=20)
 
-    if use_llm:
-        try:
-            report_agent = ReportAgent()
-            daily_report = report_agent.generate_daily_report(
-                market_data=market_data,
-                events=events,
-            )
-            kb.save_report("daily", daily_report, target_date)
-            logger.success(f"日报已保存: knowledge/daily/{date_str}.md")
-        except Exception as e:
-            logger.warning(f"LLM 日报生成失败: {e}")
-            simple_report = generate_simple_daily_report(market_data, events, date_str)
-            kb.save_report("daily", simple_report, target_date)
-            logger.success("简化日报已保存")
-    else:
-        simple_report = generate_simple_daily_report(market_data, events, date_str)
-        kb.save_report("daily", simple_report, target_date)
-        logger.success("简化日报已保存")
+    simple_report = generate_simple_daily_report(market_data, events, date_str)
+    kb.save_report("daily", simple_report, target_date)
+    logger.success(f"日报已保存: knowledge/daily/{date_str}.md")
 
     # ============================================
     # Step 4.5: 预测追踪 + 决策记忆
@@ -581,28 +571,10 @@ def run_daily_research(target_date: date = None,
             )
             logger.info(f"  决策记录: {committee_review.consensus_action}")
 
-        # 4.5d: 社交情绪分析
-        try:
-            from data.social_collector import SocialCollector
-            from llm.social_analyzer import SocialAnalyzer
-
-            social_collector = SocialCollector()
-            social_msgs = social_collector.collect(group_ids=None, timeout=5)
-            if social_msgs:
-                social_analyzer = SocialAnalyzer()
-                social_result = social_analyzer.analyze(social_msgs)
-                logger.info(f"  社交情绪: {social_result['sentiment']} "
-                           f"(bull={social_result['bull_ratio']:.0%}, "
-                           f"bear={social_result['bear_ratio']:.0%})")
-
-                # 存入 MarketFact
-                from data.market_fact import FactStore
-                fact_store = FactStore()
-                fact = social_analyzer.to_market_fact(social_result)
-                fact_store.add(fact)
-                logger.success("  社交情绪已入库")
-        except Exception as e:
-            logger.debug(f"  社交情绪分析跳过: {e}")
+        # 4.5d: 社交情绪分析（已移除 LLM 调用，保留占位）
+        # 原实现依赖 llm.social_analyzer，2026-07-06 随 LLM 模块清理移除。
+        # 社交情绪后移到 Phase C/D，由外部 Agent 通过 MCP 工具处理。
+        logger.debug("  社交情绪分析: 已后移，当前不执行")
 
         # 4.5e: 回填历史决策收益
         dm.backfill_returns(target_date)
