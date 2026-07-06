@@ -1,7 +1,6 @@
 # QuantAgent — AI 辅助量化交易研究系统
 
 > **核心原则**：传统量化引擎做交易主干，LLM 只做研究和信息处理，不直接决定下单。
-> **设计方法**：站在巨人肩膀上，直接集成已有开源项目，只写必要的胶水层。
 
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
