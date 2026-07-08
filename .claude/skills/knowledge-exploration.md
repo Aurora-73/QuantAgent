@@ -3,7 +3,7 @@
 ---
 name: knowledge-exploration
 description: 探索知识库中的事件、决策、假设和文档，全面了解投资相关信息
-requires_mcp: [search_events, get_recent_events, search_hypotheses, wiki_search, get_social_sentiment, get_recent_decisions, get_decision_accuracy, get_prediction_accuracy, get_knowledge_stats, get_db_stats]
+requires_mcp: [search_events, get_recent_events, search_hypotheses, wiki_search, get_social_sentiment, get_recent_decisions, get_decision_accuracy, get_prediction_accuracy, get_knowledge_stats, get_db_stats, run_health_check]
 ---
 
 ## 步骤 1：搜索金融事件

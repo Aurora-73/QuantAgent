@@ -3,7 +3,7 @@
 ---
 name: risk-assessment
 description: 策略风险评估标准流程，包含压力测试、归因分析和风险报告
-requires_mcp: [run_stress_test, run_brinson_attribution, get_risk_report]
+requires_mcp: [run_stress_test, run_brinson_attribution, get_risk_report, get_market_regime]
 ---
 
 ## 步骤 1：运行压力测试

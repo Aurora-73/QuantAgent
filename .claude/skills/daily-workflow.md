@@ -3,7 +3,7 @@
 ---
 name: daily-workflow
 description: 每日收盘后的标准研究流程，从数据更新到日报生成
-requires_mcp: [update_data, run_daily_research, get_daily_report, get_market_overview]
+requires_mcp: [update_data, run_daily_research, get_daily_report, get_market_overview, run_health_check]
 ---
 
 ## 步骤 1：更新行情数据

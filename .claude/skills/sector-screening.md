@@ -3,7 +3,7 @@
 ---
 name: sector-screening
 description: 行业/概念板块选股四步筛选法，从获取板块成分股到构建指数再到逐股分析
-requires_mcp: [get_sector_stocks, get_sector_index, get_history, search_tickers, get_market_overview]
+requires_mcp: [get_sector_stocks, get_sector_index, get_history, search_tickers, get_market_overview, get_sector_list]
 ---
 
 ## 步骤 1：获取板块成分股

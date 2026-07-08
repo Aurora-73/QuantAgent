@@ -46,75 +46,17 @@ Five major pain points in quantitative development, solved by one project:
 
 ## 🏗️ System Architecture
 
-### Mermaid Architecture Diagram
+### Core Business Architecture
 
-```mermaid
-flowchart TB
-    subgraph User Layer
-        A[User Strategy]
-    end
-    
-    subgraph Skill Layer
-        B1[sector-screening]
-        B2[daily-workflow]
-        B3[backtest-workflow]
-        B4[risk-assessment]
-        B5[factor-research]
-        B6[knowledge-exploration]
-        B7[market-quick-check]
-    end
-    
-    subgraph MCP Layer
-        C1[Data Tools\n14 tools]
-        C2[Risk Tools\n10 tools]
-        C3[Knowledge Tools\n11 tools]
-    end
-    
-    subgraph Core Engine
-        D1[Qlib\nFactor / Backtest]
-        D2[vn.py\nExecution]
-        D3[DuckDB\nStorage]
-    end
-    
-    subgraph Market Data
-        E1[AKShare]
-        E2[baostock]
-        E3[pytdx]
-        E4[OpenBB]
-    end
-    
-    A --> Skill Layer
-    Skill Layer --> C1 & C2 & C3
-    C1 & C2 & C3 --> D1 & D2 & D3
-    D1 & D2 & D3 --> E1 & E2 & E3 & E4
-    
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style B1 fill:#bbf,stroke:#333,stroke-width:1px
-    style B2 fill:#bbf,stroke:#333,stroke-width:1px
-    style B3 fill:#bbf,stroke:#333,stroke-width:1px
-    style B4 fill:#bbf,stroke:#333,stroke-width:1px
-    style B5 fill:#bbf,stroke:#333,stroke-width:1px
-    style B6 fill:#bbf,stroke:#333,stroke-width:1px
-    style B7 fill:#bbf,stroke:#333,stroke-width:1px
-    style C1 fill:#bfb,stroke:#333,stroke-width:1px
-    style C2 fill:#bfb,stroke:#333,stroke-width:1px
-    style C3 fill:#bfb,stroke:#333,stroke-width:1px
-    style D1 fill:#fbb,stroke:#333,stroke-width:1px
-    style D2 fill:#fbb,stroke:#333,stroke-width:1px
-    style D3 fill:#fbb,stroke:#333,stroke-width:1px
-    style E1 fill:#bbb,stroke:#333,stroke-width:1px
-    style E2 fill:#bbb,stroke:#333,stroke-width:1px
-    style E3 fill:#bbb,stroke:#333,stroke-width:1px
-    style E4 fill:#bbb,stroke:#333,stroke-width:1px
-```
+![Core Business Architecture](docs/images/CoreBusinessArchitecture.png)
 
 ### System Context Diagram
 
-![System Context Diagram](docs/images/系统上下文图.png)
+![System Context Diagram](docs/images/SystemContextDiagram.png)
 
 ### Agent Team Collaboration Architecture
 
-![Agent Team Collaboration Architecture](docs/images/Agent团队协作架构.png)
+![Agent Team Collaboration Architecture](docs/images/AgentTeamCollaborationArchitecture.png)
 
 ---
 
@@ -316,11 +258,11 @@ class StrategyBase(ABC):
 
 ### MCP Tools Overview
 
-35+ standardized tools for external Agent calls:
+Standardized MCP tools for external Agent calls. Run `python -m mcp_server.server --list-tools` for the full list:
 
-- **Data Tools** (14): get_quote, get_history, get_factors, get_sector_stocks, update_data, ...
-- **Risk & Strategy Tools** (10): run_backtest, run_stress_test, run_brinson_attribution, ...
-- **Knowledge Tools** (11): search_events, wiki_search, get_daily_report, ...
+- **Data Tools**: get_quote, get_history, get_factors, get_sector_stocks, update_data, ...
+- **Risk & Strategy Tools**: run_backtest, run_stress_test, run_brinson_attribution, ...
+- **Knowledge Tools**: search_events, wiki_search, get_daily_report, ...
 
 ### Skill Workflows
 

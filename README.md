@@ -1,18 +1,17 @@
-# 🤖 QuantAgent: The AI-Powered Quant Research Lab
+# 🤖 QuantAgent: AI驱动的量化研究实验室
 
-> **核心原则**：传统量化引擎做交易主干，LLM 只做研究和信息处理，不直接决定下单。
-> **Where LLMs are Researchers, not Traders.**
+> **核心理念**：传统量化引擎负责交易执行，LLM 负责信息处理与研究辅助。绝不让 AI 直接决定下单，消除幻觉风险。
 >
-> A production-ready framework integrating Qlib, vn.py, and MCP + Skill Architecture for systematic trading research.
+> 集成 Qlib、vn.py 和 MCP + Skill 架构的生产级量化研究框架。
 
-[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-active-orange.svg)](https://github.com/Aurora-73/QuantAgent)
+[![Python 版本](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
+[![许可证](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![状态](https://img.shields.io/badge/status-active-orange.svg)](https://github.com/Aurora-73/QuantAgent)
 [![GitHub Stars](https://img.shields.io/github/stars/Aurora-73/QuantAgent.svg?style=social)](https://github.com/Aurora-73/QuantAgent)
 [![GitHub Forks](https://img.shields.io/github/forks/Aurora-73/QuantAgent.svg?style=social)](https://github.com/Aurora-73/QuantAgent)
 [![GitHub Issues](https://img.shields.io/github/issues/Aurora-73/QuantAgent.svg)](https://github.com/Aurora-73/QuantAgent/issues)
 
-🌐 **English Version**: [README.en.md](README.en.md)
+🌐 **英文版本**：[README.en.md](README.en.md)
 
 ---
 
@@ -36,78 +35,20 @@
 
 ## ✨ 核心特性
 
-| 🛡️ Robust Infrastructure | 🧠 AI Research Team | 📈 Strategy Ready |
-|--------------------------|-------------------|------------------|
-| **Multi-source Data**: Auto-switch AKShare/baostock/pytdx | **Daily Reports**: Auto-generate Markdown reports (Daily/Weekly) | **Modular Strategies**: Momentum, Event-driven, Sentiment |
-| **DuckDB Storage**: Lightning-fast historical data storage | **Multi-Agent Debate**: Bull vs. Bear debate modules | **Risk-First**: Circuit breaker, position sizing, concentration limits |
-| **Qlib Integration**: State-of-the-art factor analysis & backtest | **Knowledge Graph**: Archive failures, events, and lessons learned | **Walk-forward**: In-sample/Out-of-sample validation |
-| **MCP Protocol**: Standardized interface for external agents | **Skill Workflows**: Business process guidance for agents | **vn.py Execution**: Unified live trading interface |
+| 🛡️ 稳健基础设施 | 🧠 AI 研究团队 | 📈 策略就绪 |
+|----------------|---------------|------------|
+| **多源数据**：自动切换 AKShare/baostock/pytdx | **每日报告**：自动生成 Markdown 报告（日报/周报） | **模块化策略**：动量策略、事件驱动策略、情绪策略 |
+| **DuckDB 存储**：闪电般的历史数据存储 | **多 Agent 辩论**：多空辩论模块 | **风控优先**：熔断机制、仓位计算、集中度限制 |
+| **Qlib 集成**：最先进的因子分析与回测 | **知识图谱**：归档失败案例、事件和经验教训 | **样本外验证**：样本内/样本外交叉验证 |
+| **MCP 协议**：标准化外部 Agent 接口 | **Skill 工作流**：业务流程指引 | **vn.py 执行**：统一实盘交易接口 |
 
 ---
 
 ## 🏗️ 系统架构
 
-### Mermaid 架构图
+### 核心业务架构
 
-```mermaid
-flowchart TB
-    subgraph User Layer
-        A[User Strategy]
-    end
-    
-    subgraph Skill Layer
-        B1[sector-screening]
-        B2[daily-workflow]
-        B3[backtest-workflow]
-        B4[risk-assessment]
-        B5[factor-research]
-        B6[knowledge-exploration]
-        B7[market-quick-check]
-    end
-    
-    subgraph MCP Layer
-        C1[Data Tools\n14 tools]
-        C2[Risk Tools\n10 tools]
-        C3[Knowledge Tools\n11 tools]
-    end
-    
-    subgraph Core Engine
-        D1[Qlib\nFactor / Backtest]
-        D2[vn.py\nExecution]
-        D3[DuckDB\nStorage]
-    end
-    
-    subgraph Market Data
-        E1[AKShare]
-        E2[baostock]
-        E3[pytdx]
-        E4[OpenBB]
-    end
-    
-    A --> Skill Layer
-    Skill Layer --> C1 & C2 & C3
-    C1 & C2 & C3 --> D1 & D2 & D3
-    D1 & D2 & D3 --> E1 & E2 & E3 & E4
-    
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style B1 fill:#bbf,stroke:#333,stroke-width:1px
-    style B2 fill:#bbf,stroke:#333,stroke-width:1px
-    style B3 fill:#bbf,stroke:#333,stroke-width:1px
-    style B4 fill:#bbf,stroke:#333,stroke-width:1px
-    style B5 fill:#bbf,stroke:#333,stroke-width:1px
-    style B6 fill:#bbf,stroke:#333,stroke-width:1px
-    style B7 fill:#bbf,stroke:#333,stroke-width:1px
-    style C1 fill:#bfb,stroke:#333,stroke-width:1px
-    style C2 fill:#bfb,stroke:#333,stroke-width:1px
-    style C3 fill:#bfb,stroke:#333,stroke-width:1px
-    style D1 fill:#fbb,stroke:#333,stroke-width:1px
-    style D2 fill:#fbb,stroke:#333,stroke-width:1px
-    style D3 fill:#fbb,stroke:#333,stroke-width:1px
-    style E1 fill:#bbb,stroke:#333,stroke-width:1px
-    style E2 fill:#bbb,stroke:#333,stroke-width:1px
-    style E3 fill:#bbb,stroke:#333,stroke-width:1px
-    style E4 fill:#bbb,stroke:#333,stroke-width:1px
-```
+![核心业务架构图](docs/images/核心业务架构.png)
 
 ### 系统上下文图
 
@@ -119,22 +60,22 @@ flowchart TB
 
 ---
 
-## 🤖 The "Right" Place for LLMs
+## 🤖 LLM 的正确定位
 
-In QuantAgent, we enforce a strict separation of powers.
+在 QuantAgent 中，我们严格执行权限分离原则。
 
-| ✅ LLM as the Analyst | ❌ LLM as the Trader |
-|----------------------|---------------------|
-| Technical/Fundamental Analysis | Directly generating buy/sell signals |
-| News Sentiment Summarization | Managing real-time order execution |
-| Generating Investment Hypotheses | Calculating precise position sizes |
-| Writing Daily Research Reports | Handling risk circuit breakers |
+| ✅ LLM 作为分析师 | ❌ LLM 作为交易员 |
+|------------------|------------------|
+| 技术面/基本面分析 | 直接生成买卖信号 |
+| 新闻情绪总结 | 管理实时订单执行 |
+| 生成投资假设 | 计算精确仓位 |
+| 撰写研究日报 | 处理风控熔断 |
 
-**LLM 是研究员，不是交易员。** This ensures high productivity without compromising on safety.
+**LLM 是研究员，不是交易员。** 这确保了高生产力的同时不牺牲安全性。
 
 ---
 
-## 🚀 One Command to Rule Them All
+## 🚀 一键安装
 
 一键安装，自动配置虚拟环境、依赖和目录结构。
 
@@ -317,11 +258,11 @@ class StrategyBase(ABC):
 
 ### MCP 工具清单
 
-35+ 个标准化工具，支持外部 Agent 调用：
+标准化 MCP 工具，支持外部 Agent 调用，运行 `python -m mcp_server.server --list-tools` 查看完整清单：
 
-- **Data Tools** (14): get_quote, get_history, get_factors, get_sector_stocks, update_data, ...
-- **Risk & Strategy Tools** (10): run_backtest, run_stress_test, run_brinson_attribution, ...
-- **Knowledge Tools** (11): search_events, wiki_search, get_daily_report, ...
+- **数据工具**: get_quote, get_history, get_factors, get_sector_stocks, update_data, ...
+- **风险与策略工具**: run_backtest, run_stress_test, run_brinson_attribution, ...
+- **知识工具**: search_events, wiki_search, get_daily_report, ...
 
 ### Skill 工作流
 
@@ -341,7 +282,7 @@ class StrategyBase(ABC):
 
 ## 🗺️ 开发路线
 
-### Phase 1: 研究 + 报告 + 复盘 ✅
+### 第一阶段：研究 + 报告 + 复盘 ✅
 
 - [x] 数据接入 (AKShare + OpenBB)
 - [x] Qlib 研究引擎集成
@@ -353,7 +294,7 @@ class StrategyBase(ABC):
 - [x] 风控引擎
 - [x] 监控告警
 
-### Phase 2: 信号引擎 + 回测 ⚡
+### 第二阶段：信号引擎 + 回测 ⚡
 
 - [x] 策略插件接口
 - [x] 动量策略实现
@@ -362,7 +303,7 @@ class StrategyBase(ABC):
 - [x] Skills 工作流层
 - [ ] Walk-forward 验证
 
-### Phase 3: 可扩展 + 高性能 + 安全 🛡️
+### 第三阶段：可扩展 + 高性能 + 安全 🛡️
 
 - [ ] MCP 工具自动发现
 - [ ] DuckDB 查询优化
@@ -370,7 +311,7 @@ class StrategyBase(ABC):
 - [ ] 写工具 dry-run
 - [ ] 财务数据接入
 
-### Phase 4: 仿真盘与实盘 📈
+### 第四阶段：仿真盘与实盘 📈
 
 - [ ] vnpy 模拟交易
 - [ ] 滑点与成交监控
@@ -379,7 +320,7 @@ class StrategyBase(ABC):
 
 ---
 
-## 🤝 Contributing
+## 🤝 贡献指南
 
 欢迎提交 Issue 和 Pull Request！请遵循以下规范：
 
@@ -391,17 +332,15 @@ class StrategyBase(ABC):
 4. 推送到分支 (`git push origin feature/foo`)
 5. 创建 Pull Request
 
-### 🌟 Good First Issues
-
-**AI 不负责猜涨跌，AI 负责提高整个研究链路的效率和质量！** 🚀
+### 🌟 适合新手的任务
 
 这些任务非常适合新手开发者入门：
 
-- 📊 **Add a new data source adapter** - 添加新的数据源适配器（如 Tushare、JoinQuant），参考 `data/provider.py`
-- 📈 **Implement a new strategy** - 实现新策略（如反转策略、均值回归策略），参考 `strategies/base/`
-- 🧪 **Add unit tests** - 为数据层或策略层添加单元测试
-- 📖 **Improve documentation** - 完善 MCP 工具文档或 Skill 工作流文档
-- 🔌 **Add new MCP tool** - 添加新的 MCP 工具，参考 `mcp_server/tools_data.py`
+- 📊 **添加新数据源适配器** - 添加新的数据源适配器（如 Tushare、JoinQuant），参考 `data/provider.py`
+- 📈 **实现新策略** - 实现新策略（如反转策略、均值回归策略），参考 `strategies/base/`
+- 🧪 **添加单元测试** - 为数据层或策略层添加单元测试
+- 📖 **完善文档** - 完善 MCP 工具文档或 Skill 工作流文档
+- 🔌 **添加新 MCP 工具** - 添加新的 MCP 工具，参考 `mcp_server/tools_data.py`
 
 ### 开发规范
 
@@ -413,14 +352,14 @@ class StrategyBase(ABC):
 
 我们提供两种 Issue 模板：
 
-- **Data Source Request** - 数据源请求：如果你需要接入新的数据源
-- **Strategy Sharing** - 策略分享：分享你的策略思路或代码
+- **数据源请求** - 数据源请求：如果你需要接入新的数据源
+- **策略分享** - 策略分享：分享你的策略思路或代码
 
 ---
 
-## 📝 License
+## 📝 许可证
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
 
 ---
 
