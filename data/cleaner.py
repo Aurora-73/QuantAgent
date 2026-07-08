@@ -318,7 +318,7 @@ class DataCleaner:
         df = DataCleaner.fill_missing(df, method="median")
 
         range_config = {
-            "pct_chg": (-20, 20),
+            "pct_change": (-20, 20),
             "turnover": (0, 50),
         }
         df = DataCleaner.clip_by_range(df, range_config)

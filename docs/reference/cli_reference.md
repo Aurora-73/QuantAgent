@@ -62,7 +62,7 @@ python -m scripts update-data --tickers 600519,300750,002475
 
 **语法**：
 ```bash
-python -m scripts daily-research [--date <date>] [--no-llm]
+python -m scripts daily-research [--date <date>]
 ```
 
 **参数**：
@@ -70,16 +70,12 @@ python -m scripts daily-research [--date <date>] [--no-llm]
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `--date` | date | 今天 | 目标日期，格式 YYYY-MM-DD |
-| `--no-llm` | flag | 无 | 不使用 LLM 生成报告 |
 
 **示例**：
 
 ```bash
-# 运行今日研究（使用LLM生成报告）
+# 运行今日研究
 python -m scripts daily-research
-
-# 运行今日研究（不使用LLM）
-python -m scripts daily-research --no-llm
 
 # 运行指定日期的研究
 python -m scripts daily-research --date 2026-07-01
@@ -240,7 +236,7 @@ python -m scripts.batch_backtest [--strategy <name>] [--ticker <code>] [--limit 
 
 | 参数 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `--strategy` | string | 全部 | 策略名称：momentum/reversal/sentiment/regime_switch |
+| `--strategy` | string | 全部 | 策略名称：momentum/event_driven/sentiment/regime_switch |
 | `--ticker` | string | 20只 | 指定股票代码 |
 | `--all-tickers` | flag | false | 回测全部标的 |
 | `--limit` | int | 20 | 标的数量限制 |
@@ -325,7 +321,7 @@ python -m scripts.test_p1
 
 ### 13. MCP Server
 
-**用途**：启动 MCP Server，暴露 32 个工具供外部 Agent 调用。
+**用途**：启动 MCP Server，暴露 MCP 工具供外部 Agent 调用。
 
 ```bash
 python -m mcp_server.server               # stdio 模式（默认）
@@ -388,7 +384,6 @@ Error: 策略 xxx 未注册
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `OPENAI_API_KEY` | OpenAI API Key | 无 |
 | `http_proxy` | HTTP 代理 | 无 |
 | `https_proxy` | HTTPS 代理 | 无 |
 | `NO_PROXY` | 跳过代理的域名 | 无 |
@@ -411,4 +406,3 @@ Error: 策略 xxx 未注册
 1. **代理设置**：AKShare 连接国内服务器，通常不需要代理。如果设置了代理导致连接失败，取消代理即可。
 2. **日期格式**：所有日期参数必须使用 `YYYY-MM-DD` 格式。
 3. **多股票**：`--ticker` 参数支持逗号分隔多个股票代码，如 `600519,300750`。
-4. **LLM 调用**：不带 `--no-llm` 参数时，会调用 OpenAI API 生成报告，需要配置 `OPENAI_API_KEY`。

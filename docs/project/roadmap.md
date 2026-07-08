@@ -10,7 +10,7 @@
 | # | 事项 | 状态 | 说明 |
 |---|------|------|------|
 | 1 | **架构定位** | ✅ | 确定为 MCP Server，移除内部 LLM 调用 |
-| 2 | **Phase 0** | ✅ | 股票池 300→301 只、事件冷启动 106 条、LLM 模块清理 |
+| 2 | **Phase 0** | ✅ | 股票池扩充、事件冷启动入库、LLM 模块清理 |
 | 3 | **基本面存储+因子** | ✅ | baostock → DuckDB，新增 ROE/PE/营收/利润 4 因子 |
 | 4 | **行业中性化** | ✅ | 截面 OLS 回归中性化（行业哑变量 + log市值） |
 | 5 | **新闻接入** | ✅ | AKShare 东方财富+财联社，日报已启用 |
@@ -18,18 +18,18 @@
 | 7 | **Phase 1 验证** | ✅ | P1 流水线跑通（10/10 组件测试，全流程运行正常） |
 | 8 | **文档整理** | ✅ | 旧文档清理 + CLAUDE.md 重写 + docs/README.md 索引 + 归档 |
 
-**当前数据库状态**：
+**当前数据库状态**（P1 验证后快照，行数以 `python -m scripts.db_stats` 实时输出为准）：
 
 | 指标 | P1 验证后 |
 |------|----------|
-| stock_daily | 452,054 行 / 301 只 |
-| factors | 11,354,151 行 / 33 因子 |
-| index_daily | 7,515 行 |
-| events | 106 条 |
-| decision_memory | 8 条 |
-| backtest_runs | 32 条 |
-| 单元测试 | 122/122 通过 |
-| 健康检查 | 7 pass, 1 warn, 0 fail |
+| stock_daily | 日线数据（行数以 db_stats 为准） |
+| factors | 因子值（注册 29 个，实际计算数以 db_stats 为准） |
+| index_daily | 指数日线数据 |
+| events | 结构化新闻事件 |
+| decision_memory | 决策记忆 |
+| backtest_runs | 回测记录（4 策略 × 多标的） |
+| 单元测试 | 全部通过（以 `pytest tests/` 输出为准） |
+| 健康检查 | 通过（以 `python -m scripts.health_check` 输出为准） |
 
 ---
 

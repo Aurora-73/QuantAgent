@@ -313,46 +313,6 @@ FeatureVector(
 
 ---
 
-## LLM 结构化输出
-
-### LLMEventExtraction — LLM 事件抽取结果
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `events` | list[Event] | 否 | 抽取的事件列表 |
-| `raw_text` | str | 否 | 原始文本 |
-| `parse_success` | bool | 否 | 解析是否成功 |
-| `error` | str | 否 | 错误信息 |
-
-### LLMSummary — LLM 摘要结果
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `title` | str | 否 | 标题 |
-| `summary` | str | 否 | 摘要 |
-| `key_points` | list[str] | 否 | 关键点 |
-| `sentiment` | Sentiment | 否 | 情绪 |
-| `confidence` | float | 否 | 置信度 |
-| `risk_flags` | list[str] | 否 | 风险标记 |
-| `industry_impact` | list[str] | 否 | 行业影响 |
-| `parse_success` | bool | 否 | 解析是否成功 |
-| `error` | str | 否 | 错误信息 |
-
-### LLMResearchDecision — LLM 研究决策输出
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `signal` | str | 否 | 信号（Buy/Overweight/Hold/Underweight/Sell） |
-| `signal_score` | float | 否 | 信号分数 |
-| `reasoning` | str | 否 | 推理过程 |
-| `key_factors` | list[str] | 否 | 关键因子 |
-| `risk_flags` | list[str] | 否 | 风险标记 |
-| `confidence` | float | 否 | 置信度 |
-| `parse_success` | bool | 否 | 解析是否成功 |
-| `error` | str | 否 | 错误信息 |
-
----
-
 ## 回测结果
 
 ### BacktestResult — 回测结果
@@ -416,16 +376,18 @@ FeatureVector(
 
 ### 核心表
 
-| 表名 | 说明 | 数据量 |
-|------|------|--------|
-| `stock_daily` | 股票日线数据 | ~187K |
-| `index_daily` | 指数日线数据 | ~6.5K |
-| `factors` | 因子值 | ~675K |
-| `financials` | 基本面数据 | ~15K |
-| `news` | 新闻数据 | ~0 |
-| `events` | 事件数据 | ~0 |
-| `backtest_runs` | 回测记录 | ~21 |
-| `equity_curve` | 权益曲线 | ~5K |
+> 行数为快照性质，**以 `python -m scripts.db_stats` 实时输出为准**。下表仅列说明，不固化行数。
+
+| 表名 | 说明 |
+|------|------|
+| `stock_daily` | 股票日线数据 |
+| `index_daily` | 指数日线数据 |
+| `factors` | 因子值（注册 29 个，实际计算数以 db_stats 为准） |
+| `financials` | 基本面数据 |
+| `news` | 新闻数据 |
+| `events` | 事件数据 |
+| `backtest_runs` | 回测记录 |
+| `equity_curve` | 权益曲线 |
 
 ---
 

@@ -3,7 +3,7 @@
 > 版本：v1.0  
 > 日期：2026-07-03  
 > 范围：quant-system 全部模块  
-> 前置文档：`docs/plan/crispy-wondering-petal.md`（架构方案）、`docs/plan/bug.md`（缺陷跟踪）
+> 前置文档：`docs/plan/phase-a-b-plan.md`（架构方案）、`docs/plan/issues.md`（缺陷跟踪）
 
 ---
 
@@ -16,8 +16,7 @@
 | 策略 | strategies/ | 4 个插件化策略（momentum / event_driven / sentiment / regime_switch） |
 | 风险 | risk/ | 压力测试、Brinson 归因、衰减检测、投资组合优化 |
 | 知识 | knowledge/ | 层级记忆（日/周/月/季/年）、事件库、假设库、Wiki |
-| LLM | llm/ | 事件提取、摘要生成、报告生成（OKF 8 段模板） |
-| MCP | mcp_server/ | 30 个工具（data×6 + knowledge×10 + risk×12 + 通用×2） |
+| MCP | mcp_server/ | MCP 工具（data / knowledge / risk 三组） |
 | 执行 | execution/ | 模拟执行引擎、经纪商抽象层 |
 | 监控 | monitoring/ | 指标追踪、告警管理、实盘偏差检测 |
 | 集成 | integrations/ | Qlib / vnpy / OpenBB / TradingAgents 适配层 |
@@ -87,7 +86,7 @@
 | 检查项 | 方法 | 通过标准 |
 |--------|------|----------|
 | 服务启动 | `python -m mcp_server.server` | 启动成功，无 import 错误 |
-| 工具列表 | MCP 客户端列出工具 | 可见全部 30 个工具 |
+| 工具列表 | MCP 客户端列出工具 | 可见全部 MCP 工具 |
 | 行情工具 | 调用 get_quote / get_history | 返回 json，pct_change 正确计算 |
 | 因子工具 | 调用 get_factors / run_factor_evaluation | 返回因子值或友好提示 |
 | 风险工具 | 调用 run_stress_test / run_backtest | 参数验证正常工作 |
@@ -96,23 +95,14 @@
 | 边界情况 | 空数据 / 未来日期 / 无效股票 | 返回友好错误提示 |
 | 编码 | 中文参数 | 正常返回，无乱码 / UnicodeEncodeError |
 
-### 2.7 LLM 层
-
-| 检查项 | 方法 | 通过标准 |
-|--------|------|----------|
-| 事件提取 | 调用 extractor.extract() | 返回 ExtractedEvent 列表 |
-| 报告生成 | 调用 report_agent 生成日报 | 输出 OKF 8 段格式 |
-| 社交情绪 | `get_social_sentiment()` | 返回情绪分析结果（可为空） |
-| 假设列表 | `search_hypotheses()` | 返回假设列表 |
-
-### 2.8 执行层
+### 2.7 执行层
 
 | 检查项 | 方法 | 通过标准 |
 |--------|------|----------|
 | 模拟回放 | ExecutionSimulator.run() | 以时间顺序回放并记录成交 |
 | 经纪商接口 | BrokerBase 子类 | 实现 connect / place_order / get_positions |
 
-### 2.9 配置与日志
+### 2.8 配置与日志
 
 | 检查项 | 方法 | 通过标准 |
 |--------|------|----------|
@@ -176,13 +166,13 @@ compare_backtest_runs() → 确认返回历史记录
 |------|------|--------|
 | G1: 服务启动 | `python -m mcp_server.server` 无报错退出 | 阻断 |
 | G2: Import | 所有工具模块 import 无异常 | 阻断 |
-| G3: 工具列表 | MCP 客户端可见全部 30 个工具 | 阻断 |
+| G3: 工具列表 | MCP 客户端可见全部 MCP 工具 | 阻断 |
 | G4: 核心工具 | 行情 + 因子 + 回测 + Wiki 工具返回有效数据 | 阻断 |
 | G5: 错误处理 | 无效参数返回 error 字段，不崩溃 | 非阻断，P2 |
 | G6: 中文编码 | 中文输入输出无乱码 | 非阻断，P1 |
 | G7: NaN 守卫 | 无数据场景不返回 NaN/崩溃 | 阻断 |
 | G8: 参数验证 | run_backtest 验证策略名/股票/日期 | 非阻断，P1 |
-| Q1: 文档完整 | README / MCP readme / bug.md 存在且准确 | 非阻断，P2 |
+| Q1: 文档完整 | README / MCP readme / issues.md 存在且准确 | 非阻断，P2 |
 
 ---
 
@@ -214,8 +204,8 @@ compare_backtest_runs() → 确认返回历史记录
 - [ ] G1-G4 全部通过（服务启动 + Import + 工具列表 + 核心工具）
 - [ ] G5 + G7 全部通过（错误处理 + NaN 守卫）
 - [ ] 阶段 1-3 冒烟测试完成，无阻断性 bug
-- [ ] 所有已知 bug 已记录在 bug.md
-- [ ] MCP 客户端可稳定调用全部 30 个工具
+- [ ] 所有已知 bug 已记录在 issues.md
+- [ ] MCP 客户端可稳定调用全部 MCP 工具
 
 ---
 

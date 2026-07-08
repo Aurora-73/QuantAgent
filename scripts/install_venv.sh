@@ -48,9 +48,9 @@ echo ""
 echo "[5/5] 安装 qlib..."
 $PIP install pyqlib 2>&1 | tail -2 || {
     echo "  pyqlib 安装失败，尝试从源码编译..."
-    cd ../_reference/qlib
+    cd ../../_reference/qlib
     $PIP install -e . 2>&1 | tail -3
-    cd ../../quant-system
+    cd ../../QuantAgent
 }
 
 # 6. 安装 OpenBB

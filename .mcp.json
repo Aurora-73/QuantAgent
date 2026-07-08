@@ -1,14 +1,14 @@
 {
   "mcpServers": {
     "QuantSystem": {
-      "command": "/home/edalab/Desktop/cme_code/量化交易/quant-system/.venv/bin/python",
+      "command": "/home/edalab/Desktop/cme_code/quant-system/QuantAgent/.venv/bin/python",
       "args": [
         "-m",
         "mcp_server.server"
       ],
-      "cwd": "/home/edalab/Desktop/cme_code/量化交易/quant-system",
+      "cwd": "/home/edalab/Desktop/cme_code/quant-system/QuantAgent",
       "env": {
-        "PYTHONPATH": "/home/edalab/Desktop/cme_code/量化交易/quant-system",
+        "PYTHONPATH": "/home/edalab/Desktop/cme_code/quant-system/QuantAgent",
         "PYTHONIOENCODING": "utf-8"
       }
     }

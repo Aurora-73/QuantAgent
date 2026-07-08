@@ -1,6 +1,6 @@
 # LLM 辅助量化交易系统架构设计
 
-> **2026-07-06 架构定位更新**：本项目定位为 **MCP Server**，将量化研究能力（行情/因子/回测/风控/知识库）暴露为 32 个 MCP 工具，供 Claude/Codex/外部 Agent 调用。LLM 能力由调用方提供，系统内部不内置 LLM。
+> **2026-07-06 架构定位更新**：本项目定位为 **MCP Server**，将量化研究能力（行情/因子/回测/风控/知识库）暴露 MCP 工具供 Claude/Codex/外部 Agent 调用。LLM 能力由调用方提供，系统内部不内置 LLM。
 
 > 核心哲学：传统量化引擎做交易主干，LLM 只做研究和信息处理，不直接决定下单。
 > 设计目标：一个个人可实现的 Agent 基金公司
@@ -32,7 +32,7 @@
 
 ## 一、MCP 工具层（当前核心定位）
 
-系统以 **MCP Server** 模式运行，通过 `mcp_server/server.py` 暴露 32 个工具，分为 3 组：
+系统以 **MCP Server** 模式运行，通过 `mcp_server/server.py` 暴露工具，分为 3 组：
 
 | 模块 | 工具数 | 功能 | 文件 |
 |------|--------|------|------|
@@ -62,9 +62,9 @@ Feishu/Telegram/Slack → cc-connect → Claude Code → MCP Server → DuckDB +
     "QuantSystem": {
       "command": "/path/to/.venv/bin/python",
       "args": ["-m", "mcp_server.server"],
-      "cwd": "/path/to/quant-system",
+      "cwd": "/path/to/quant-system/QuantAgent",
       "env": {
-        "PYTHONPATH": "/path/to/quant-system",
+        "PYTHONPATH": "/path/to/quant-system/QuantAgent",
         "PYTHONIOENCODING": "utf-8"
       }
     }
@@ -74,7 +74,7 @@ Feishu/Telegram/Slack → cc-connect → Claude Code → MCP Server → DuckDB +
 
 查看全部工具：
 ```bash
-cd quant-system && source .venv/bin/activate
+cd QuantAgent && source .venv/bin/activate
 python -m mcp_server.server --list-tools
 ```
 

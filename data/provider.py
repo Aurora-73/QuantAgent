@@ -131,7 +131,7 @@ class DataProvider:
             adjust: 复权方式 "qfq"(前复权) / "hfq"(后复权) / ""(不复权)
 
         Returns:
-            标准化 DataFrame (date index, open, high, low, close, volume, amount, turnover, pct_chg)
+            标准化 DataFrame (date index, open, high, low, close, volume, amount, turnover, pct_change)
         """
         # baostock 优先：稳定、含换手率、无代理问题
         if HAS_BAOSTOCK and adjust in ("qfq", ""):
@@ -646,8 +646,8 @@ def _baostock_daily(ticker: str, start_date: str = None,
         return pd.DataFrame()
 
     df = pd.DataFrame(data, columns=["date", "open", "high", "low", "close",
-                                      "volume", "amount", "turn", "pct_chg"])
-    for col in ["open", "high", "low", "close", "volume", "amount", "turn", "pct_chg"]:
+                                      "volume", "amount", "turn", "pct_change"])
+    for col in ["open", "high", "low", "close", "volume", "amount", "turn", "pct_change"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
     df["date"] = pd.to_datetime(df["date"])
     df = df.set_index("date").sort_index()
@@ -684,8 +684,8 @@ def _akshare_stock_daily(ticker: str, start_date: str = None,
         df["date"] = pd.to_datetime(df["date"])
         df = df.set_index("date").sort_index()
 
-    if "pct_chg" not in df.columns:
-        df["pct_chg"] = df["close"].pct_change() * 100
+    if "pct_change" not in df.columns:
+        df["pct_change"] = df["close"].pct_change() * 100
 
     return df
 

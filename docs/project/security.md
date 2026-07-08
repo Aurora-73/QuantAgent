@@ -1,6 +1,6 @@
 # 安全文档
 
-> Quant System 安全与合规说明。
+> 生成日期：2026-07-06 | 最后更新：2026-07-07 | 适用场景：安全与合规说明
 
 ---
 
@@ -24,7 +24,6 @@
 
 ```bash
 # .env 文件（不提交到版本控制）
-OPENAI_API_KEY=sk-xxx
 SENDCHAN_SENDKEY=xxx
 ```
 
@@ -85,10 +84,10 @@ logger.info(f"API Key: {mask_api_key(api_key)}")
 ### 代理配置
 
 ```bash
-# 国内访问（AKShare）
+# 国内访问（AKShare / baostock）
 # 不需要代理
 
-# 海外访问（OpenAI）
+# 海外访问（如需拉取外部资源）
 export http_proxy="http://127.0.0.1:7890"
 export https_proxy="http://127.0.0.1:7890"
 ```
@@ -97,7 +96,7 @@ export https_proxy="http://127.0.0.1:7890"
 
 | 规则 | 说明 |
 |------|------|
-| 允许出站 | AKShare、OpenAI |
+| 允许出站 | AKShare、baostock |
 | 允许入站 | MCP 服务端口 |
 | 禁止入站 | 数据库端口 |
 
@@ -202,5 +201,5 @@ logger.addFilter(SensitiveDataFilter())
 
 ## 参考
 
-- [配置文档](file:///E:/Code/量化交易/docs/configuration.md)
-- [灾难恢复](file:///E:/Code/量化交易/docs/operations/disaster_recovery.md)
+- [配置文档](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/docs/reference/configuration.md)
+- [灾难恢复](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/docs/operations/disaster_recovery.md)

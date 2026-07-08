@@ -367,7 +367,6 @@ Strategy C → WeightVector → ExecutionEngine → Orders
 - [ ] 仓位计算是否考虑了现有持仓？
 - [ ] 风控检查是否实现了策略级规则？
 - [ ] 熔断条件是否合理？
-- [ ] 策略是否可以在 `--no-llm` 模式下运行？
 - [ ] 回测是否通过？
 - [ ] 是否有样本外测试？
 
@@ -475,6 +474,6 @@ def prepare_features(self, data: pd.DataFrame) -> pd.DataFrame:
 
 ## 参考
 
-- [StrategyBase 源码](file:///E:/Code/量化交易/quant-system/strategies/base/strategy_base.py)
-- [策略注册表](file:///E:/Code/量化交易/quant-system/strategies/registry.py)
-- [动量策略示例](file:///E:/Code/量化交易/quant-system/strategies/momentum/strategy.py)
+- [StrategyBase 源码](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/strategies/base/strategy_base.py)
+- [策略注册表](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/strategies/registry.py)
+- [动量策略示例](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/strategies/momentum/strategy.py)

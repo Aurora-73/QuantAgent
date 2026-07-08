@@ -129,26 +129,6 @@ RuntimeError: Invalid Input Error: IO Error: Could not set lock on file "quant.d
 
 ---
 
-### 7. LLM API 调用失败
-
-**问题现象**：
-```log
-OpenAIError: API key not provided
-```
-
-**原因**：未配置 `OPENAI_API_KEY`
-
-**修复方案**：
-```bash
-cp configs/.env.example configs/.env
-```
-编辑 `configs/.env`，填入 API Key：
-```
-OPENAI_API_KEY=sk-你的key
-```
-
----
-
 ## 环境问题
 
 ### 8. Windows GBK 编码问题

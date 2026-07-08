@@ -1,8 +1,8 @@
 # Phase 2 实施计划
 
 > 生成日期：2026-07-06 | 最后更新：2026-07-06
-> 基线版本：P1 已验证通过（10/10 组件测试，全流程可运行）
-> 前置条件：数据 452K 行、因子 11.3M 行、事件 106 条、4 策略全部注册
+> 基线版本：P1 已验证通过（组件测试通过，全流程可运行）
+> 前置条件：数据/因子/事件已入库（行数以 db_stats 为准）、4 策略全部注册
 
 ---
 
@@ -18,18 +18,18 @@
 4. **MCP 可写** — 外部 Agent 能通过 MCP 触发回测和改配置
 5. **Walk-Forward CLI** — 参数扫描命令行接入
 
-### 1.2 当前基线（P1 验收后）
+### 1.2 当前基线（P1 验收后快照，行数以 `python -m scripts.db_stats` 实时输出为准）
 
-| 指标 | 数值 |
+| 指标 | 说明 |
 |------|------|
-| stock_daily | 452,054 行 / 301 只 |
-| factors | 11,354,151 行 / 33 因子 |
-| index_daily | 7,515 行 |
-| events | 106 条 |
-| decision_memory | 8 条 |
-| backtest_runs | 32 条 |
-| 单元测试 | 122/122 通过 |
-| 健康检查 | 7 pass, 1 warn, 0 fail |
+| stock_daily | 日线数据（行数以 db_stats 为准） |
+| factors | 因子值（注册 29 个，实际计算数以 db_stats 为准） |
+| index_daily | 指数日线数据 |
+| events | 结构化新闻事件 |
+| decision_memory | 决策记忆 |
+| backtest_runs | 回测记录（4 策略 × 多标的） |
+| 单元测试 | 全部通过（以 `pytest tests/` 输出为准） |
+| 健康检查 | 通过（以 `python -m scripts.health_check` 输出为准） |
 
 ### 1.3 依赖关系
 
@@ -239,7 +239,7 @@ python -m scripts.batch_backtest --compare --output results.json
 
 **目的**：给 MCP Server 添加写操作工具，让外部 Agent 能触发回测和修改配置。
 
-**背景**：当前 30+ MCP 工具全部为只读（`readOnlyHint: True`）。外部 Agent 只能查看数据，不能执行操作。
+**背景**：MCP 工具中大部分为只读（`readOnlyHint: True`）。外部 Agent 只能查看数据，不能执行操作。
 
 **实施步骤**：
 

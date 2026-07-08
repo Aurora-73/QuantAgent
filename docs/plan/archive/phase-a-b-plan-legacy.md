@@ -1,5 +1,6 @@
 # 量化交易系统 — 整体架构方案
 
+> ⚠️ 本文档已归档（2026-07-07），内容仅作历史参考。
 > 创建日期：2026-07-02
 > 最后更新：2026-07-06 (Phase A 已全部完成，清理已完成项)
 > 定位：整合所有设计分析，形成可执行的架构演进路线图
@@ -791,7 +792,7 @@ Phase D  [生态]         ← 基础打好后的放大
 ### Phase A 新建（✅ 全部完成）
 
 ```
-quant-system/
+QuantAgent/
   utils/
     logging.py              ✅ 结构化日志
   configs/
@@ -807,7 +808,7 @@ quant-system/
 ### Phase A 修改（✅ 全部完成）
 
 ```
-quant-system/
+QuantAgent/
   monitoring/notifier.py        ✅ print→logger, settings迁移
   data/storage.py               ✅ db_path from settings
   risk/risk_engine.py           ✅ RiskConfig from settings
@@ -822,7 +823,7 @@ quant-system/
 ### Phase B 新建/修改（✅ 全部完成）
 
 ```
-quant-system/
+QuantAgent/
   research/
     fusion.py               ← FusionEngine (含情报融合规则)
     regime_detector.py      ← MarketRegimeDetector
@@ -962,8 +963,8 @@ docs/phase-b-issues.md       ← 实施记录
 
 | 项目 | 路径 | 借鉴内容 |
 |------|------|---------|
-| **loverMentor** | `E:\Code\loverMentor` (外部) | 五步分析流程（方法论→市场记忆→数据→验证→输出）、OKF Wiki 五维评分检索、facts/judgments 分离、事实验证体系、**社交情绪分类管道（搬用）** |
-| **枫叶子 (fengyezi)** | `D:/fengyezi` (外部) | Multi-Agent 规则委员会、ETF 整手优化、风险预算、现金部署回退、Walk-Forward 动态配置重选、决策记忆（1/3/5/10日事后验证）、情报-数据融合规则 |
+| **loverMentor** | (外部项目，原开发机路径) | 五步分析流程（方法论→市场记忆→数据→验证→输出）、OKF Wiki 五维评分检索、facts/judgments 分离、事实验证体系、**社交情绪分类管道（搬用）** |
+| **枫叶子 (fengyezi)** | (外部项目，原开发机路径) | Multi-Agent 规则委员会、ETF 整手优化、风险预算、现金部署回退、Walk-Forward 动态配置重选、决策记忆（1/3/5/10日事后验证）、情报-数据融合规则 |
 
 ### 参考项目（_reference/ 目录下）
 
@@ -982,7 +983,7 @@ docs/phase-b-issues.md       ← 实施记录
 
 ## 附录 B：深度代码审计（2026-07-02）
 
-> 审计方法：逐文件阅读 quant-system/ 下所有 68 个源文件，对比架构文档与实现的一致性。
+> 审计方法：逐文件阅读 QuantAgent/ 下所有 68 个源文件，对比架构文档与实现的一致性。
 > 范围：14 个模块（strategies / research / risk / data / integrations / llm / monitoring / news / knowledge / configs / scripts / agents / utils / execution）
 
 ---

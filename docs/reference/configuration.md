@@ -27,17 +27,10 @@
 cp configs/.env.example configs/.env
 ```
 
-**必填项**：
+**环境变量**（均可选）：
 
 | 变量名 | 说明 | 默认值 |
 |--------|------|--------|
-| `OPENAI_API_KEY` | OpenAI API Key | 无 |
-
-**选填项**：
-
-| 变量名 | 说明 | 默认值 |
-|--------|------|--------|
-| `OPENAI_BASE_URL` | OpenAI API 自定义地址 | 无 |
 | `SENDCHAN_SENDKEY_ME` | ServerChan 发送密钥（个人） | 无 |
 | `SENDCHAN_SENDKEY_DAISEN` | ServerChan 发送密钥（备用） | 无 |
 | `HTTP_PROXY` | HTTP 代理 | 无 |
@@ -87,27 +80,6 @@ backtest:
 | `default_universe` | str | `csi300` | 默认股票池 |
 | `data_request_sleep` | float | `0.3` | 数据请求间隔（秒） |
 | `default_index_code` | str | `000300` | 默认指数代码（沪深300） |
-
-### LLM 配置
-
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `openai_api_key` | str | None | OpenAI API Key |
-| `openai_base_url` | str | None | OpenAI API 自定义地址 |
-| `llm_model` | str | `gpt-4o` | LLM 模型名称 |
-| `llm_temperature` | float | `0.3` | 温度参数（0-2，越低越确定性） |
-| `llm_max_tokens` | int | `4096` | 最大输出token数 |
-| `llm_extraction_temperature` | float | `0.2` | 事件抽取温度参数 |
-| `llm_extraction_max_tokens` | int | `2048` | 事件抽取最大token数 |
-
-**LLM 参数调优建议**：
-
-| 场景 | temperature | max_tokens |
-|------|------------|------------|
-| 事件抽取 | 0.1-0.2 | 1024-2048 |
-| 报告生成 | 0.3-0.5 | 2048-4096 |
-| 因子假设生成 | 0.7-1.0 | 2048 |
-| 情绪分析 | 0.2-0.3 | 512 |
 
 ### 通知配置
 
@@ -245,10 +217,6 @@ max_drawdown = settings.max_drawdown_stop
 lookback = settings.momentum_lookback
 entry_threshold = settings.momentum_entry_threshold
 
-# 获取LLM配置
-api_key = settings.openai_api_key
-model = settings.llm_model
-
 # 获取回测配置
 init_cash = settings.backtest_init_cash
 fees = settings.backtest_fees
@@ -261,12 +229,10 @@ fees = settings.backtest_fees
 ```bash
 # Linux / macOS
 export MAX_SINGLE_POSITION=0.10
-export OPENAI_API_KEY=sk-xxx
 python -m scripts backtest
 
 # Windows PowerShell
 $env:MAX_SINGLE_POSITION="0.10"
-$env:OPENAI_API_KEY="sk-xxx"
 python -m scripts backtest
 ```
 

@@ -1,84 +1,141 @@
-# QuantAgent — AI-Assisted Quantitative Trading Research System
+# 🤖 QuantAgent: The AI-Powered Quant Research Lab
 
-> **Core Principle**: Traditional quantitative engines form the trading backbone, while LLM only handles research and information processing, never directly deciding trades.
-> **Design Philosophy**: Stand on the shoulders of giants - directly integrate existing open-source projects, only write the necessary glue layer.
+> **Where LLMs are Researchers, not Traders.**
+>
+> A production-ready framework integrating Qlib, vn.py, and MCP + Skill Architecture for systematic trading research.
 
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-active-orange.svg)](https://github.com/Aurora-73/QuantAgent)
+[![GitHub Stars](https://img.shields.io/github/stars/Aurora-73/QuantAgent.svg?style=social)](https://github.com/Aurora-73/QuantAgent)
+[![GitHub Forks](https://img.shields.io/github/forks/Aurora-73/QuantAgent.svg?style=social)](https://github.com/Aurora-73/QuantAgent)
+[![GitHub Issues](https://img.shields.io/github/issues/Aurora-73/QuantAgent.svg)](https://github.com/Aurora-73/QuantAgent/issues)
 
-## 📖 Project Introduction
+🌐 **Chinese Version**: [README.md](README.md)
 
-QuantAgent is a **personal implementable Agent fund company** that automates the entire quantitative trading research workflow through multi-Agent team collaboration:
+---
 
-- **Data Layer**: Multi-data-source auto-switching (AKShare/baostock/pytdx), unified data cleaning
-- **Research Layer**: Factor analysis, strategy backtesting, Walk-forward validation
-- **Strategy Layer**: Plugin-based architecture supporting momentum, event-driven, sentiment analysis and more
-- **Risk Layer**: Systematic risk engine with single-stock limits, industry concentration, drawdown circuit breakers
-- **Memory Layer**: Hierarchical memory system (Daily → Weekly → Monthly → Quarterly → Annual)
-- **LLM Assistance**: Multi-Agent research team (News/Fundamental/Technical/Risk/Research Assistant)
+**Core Philosophy** 🔭 : Traditional quantitative engines handle trade execution, while LLM handles information processing and research assistance. **Never let AI directly decide trades**, eliminating hallucination risks.
+
+---
+
+## 🎯 Why QuantAgent?
+
+Five major pain points in quantitative development, solved by one project:
+
+| Pain Point | Solution |
+|------------|----------|
+| 📊 Data source chaos | Multi-source auto-switching (AKShare/baostock/pytdx), unified data cleaning |
+| 🔬 Difficult backtesting | Qlib + VectorBT dual engine, Walk-forward validation |
+| 🤖 Inconsistent live trading interfaces | vn.py unified execution interface, supporting CTP/IB |
+| 🧠 AI hallucination risk | LLM only does research, not trading, strict permission separation |
+| 📝 Tedious research workflow | Multi-Agent team collaboration, auto-generate daily/weekly reports |
+
+---
+
+## ✨ Core Features
+
+| 🛡️ Robust Infrastructure | 🧠 AI Research Team | 📈 Strategy Ready |
+|--------------------------|-------------------|------------------|
+| **Multi-source Data**: Auto-switch AKShare/baostock/pytdx | **Daily Reports**: Auto-generate Markdown reports (Daily/Weekly) | **Modular Strategies**: Momentum, Event-driven, Sentiment |
+| **DuckDB Storage**: Lightning-fast historical data storage | **Multi-Agent Debate**: Bull vs. Bear debate modules | **Risk-First**: Circuit breaker, position sizing, concentration limits |
+| **Qlib Integration**: State-of-the-art factor analysis & backtest | **Knowledge Graph**: Archive failures, events, and lessons learned | **Walk-forward**: In-sample/Out-of-sample validation |
+| **MCP Protocol**: Standardized interface for external agents | **Skill Workflows**: Business process guidance for agents | **vn.py Execution**: Unified live trading interface |
+
+---
 
 ## 🏗️ System Architecture
 
+### Mermaid Architecture Diagram
+
+```mermaid
+flowchart TB
+    subgraph User Layer
+        A[User Strategy]
+    end
+    
+    subgraph Skill Layer
+        B1[sector-screening]
+        B2[daily-workflow]
+        B3[backtest-workflow]
+        B4[risk-assessment]
+        B5[factor-research]
+        B6[knowledge-exploration]
+        B7[market-quick-check]
+    end
+    
+    subgraph MCP Layer
+        C1[Data Tools\n14 tools]
+        C2[Risk Tools\n10 tools]
+        C3[Knowledge Tools\n11 tools]
+    end
+    
+    subgraph Core Engine
+        D1[Qlib\nFactor / Backtest]
+        D2[vn.py\nExecution]
+        D3[DuckDB\nStorage]
+    end
+    
+    subgraph Market Data
+        E1[AKShare]
+        E2[baostock]
+        E3[pytdx]
+        E4[OpenBB]
+    end
+    
+    A --> Skill Layer
+    Skill Layer --> C1 & C2 & C3
+    C1 & C2 & C3 --> D1 & D2 & D3
+    D1 & D2 & D3 --> E1 & E2 & E3 & E4
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B1 fill:#bbf,stroke:#333,stroke-width:1px
+    style B2 fill:#bbf,stroke:#333,stroke-width:1px
+    style B3 fill:#bbf,stroke:#333,stroke-width:1px
+    style B4 fill:#bbf,stroke:#333,stroke-width:1px
+    style B5 fill:#bbf,stroke:#333,stroke-width:1px
+    style B6 fill:#bbf,stroke:#333,stroke-width:1px
+    style B7 fill:#bbf,stroke:#333,stroke-width:1px
+    style C1 fill:#bfb,stroke:#333,stroke-width:1px
+    style C2 fill:#bfb,stroke:#333,stroke-width:1px
+    style C3 fill:#bfb,stroke:#333,stroke-width:1px
+    style D1 fill:#fbb,stroke:#333,stroke-width:1px
+    style D2 fill:#fbb,stroke:#333,stroke-width:1px
+    style D3 fill:#fbb,stroke:#333,stroke-width:1px
+    style E1 fill:#bbb,stroke:#333,stroke-width:1px
+    style E2 fill:#bbb,stroke:#333,stroke-width:1px
+    style E3 fill:#bbb,stroke:#333,stroke-width:1px
+    style E4 fill:#bbb,stroke:#333,stroke-width:1px
+```
+
 ### System Context Diagram
 
-![System Context Diagram](docs/images/SystemContextDiagram.png)
-
-### Core Business Architecture
-
-![Core Business Architecture](docs/images/CoreBusinessArchitecture.png)
+![System Context Diagram](docs/images/系统上下文图.png)
 
 ### Agent Team Collaboration Architecture
 
-![Agent Team Collaboration Architecture](docs/images/AgentTeamCollaborationArchitecture.png)
+![Agent Team Collaboration Architecture](docs/images/Agent团队协作架构.png)
 
-## 📁 Directory Structure
+---
 
-```
-quant-system/
-├── quant_system/              # Core source code package
-│   ├── data/                  # Data layer
-│   │   ├── provider.py        # Data acquisition
-│   │   ├── storage.py         # DuckDB storage
-│   │   └── cleaner.py         # Data cleaning
-│   ├── strategies/            # Strategy layer
-│   │   ├── base/              # Strategy base class
-│   │   ├── momentum/          # Momentum strategy
-│   │   ├── event_driven/      # Event-driven strategy
-│   │   └── sentiment/         # Sentiment strategy
-│   ├── research/              # Research layer
-│   │   ├── backtest.py        # Backtest engine
-│   │   └── factor_eval.py     # Factor evaluation
-│   ├── risk/                  # Risk layer
-│   │   ├── risk_engine.py     # Risk engine
-│   │   └── portfolio.py       # Portfolio optimization
-│   ├── knowledge/             # Memory layer
-│   │   └── knowledge_base.py  # Hierarchical memory system
-│   ├── llm/                   # LLM layer
-│   │   └── report_agent.py    # Report generation agent
-│   ├── integrations/          # Integration layer
-│   │   ├── qlib_engine.py     # Qlib integration
-│   │   ├── vnpy_engine.py     # vnpy integration
-│   │   ├── trading_agents.py  # TradingAgents integration
-│   │   └── openbb_data.py     # OpenBB integration
-│   ├── configs/               # Configuration files
-│   └── monitoring/            # Monitoring layer
-├── examples/                  # Usage examples
-│   ├── 00_quick_start.py      # Quick start
-│   ├── 01_get_data.py         # Data acquisition
-│   ├── 02_calc_factors.py     # Factor calculation
-│   ├── 03_backtest.py         # Backtest demo
-│   ├── 04_knowledge.py        # Knowledge base demo
-│   └── 05_llm_analysis.py     # LLM analysis demo
-├── tests/                     # Unit tests
-├── scripts/                   # Script entry points
-├── docs/                      # Documentation
-├── requirements.txt           # Dependencies
-├── pyproject.toml             # Project configuration
-└── LICENSE                    # License
-```
+## 🤖 The "Right" Place for LLMs
 
-## 🚀 Quick Start
+In QuantAgent, we enforce a strict separation of powers.
+
+| ✅ LLM as the Analyst | ❌ LLM as the Trader |
+|----------------------|---------------------|
+| Technical/Fundamental Analysis | Directly generating buy/sell signals |
+| News Sentiment Summarization | Managing real-time order execution |
+| Generating Investment Hypotheses | Calculating precise position sizes |
+| Writing Daily Research Reports | Handling risk circuit breakers |
+
+**LLM is a researcher, not a trader.** This ensures high productivity without compromising on safety.
+
+---
+
+## 🚀 One Command to Rule Them All
+
+One-click installation, automatic configuration of virtual environment, dependencies, and directory structure.
 
 ### Prerequisites
 
@@ -87,22 +144,17 @@ quant-system/
 
 ### One-Click Installation (Recommended)
 
-**Cross-platform (Recommended):**
 ```bash
+# Clone the project
+git clone https://github.com/Aurora-73/QuantAgent.git
+cd QuantAgent
+
+# Cross-platform one-click installation
 python scripts/install.py
 ```
 
-**Windows (PowerShell):**
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/install_windows.ps1
-```
-
-**Linux/Mac (Bash):**
-```bash
-bash scripts/install.sh
-```
-
 The script automatically completes:
+
 1. ✅ Environment check (Python/Git)
 2. ✅ Create virtual environment (auto-detect and fix platform mismatch)
 3. ✅ Install core dependencies (requirements.txt)
@@ -113,10 +165,6 @@ The script automatically completes:
 ### Manual Installation
 
 ```bash
-# Clone the project
-git clone https://github.com/Aurora-73/QuantAgent.git
-cd quant-system
-
 # Create virtual environment
 python -m venv .venv
 source .venv/bin/activate    # Linux/macOS
@@ -138,7 +186,53 @@ cp configs/.env.example configs/.env
 | vnpy | `pip install ta-lib vnpy vnpy-ctp` | Execution engine, live trading |
 | OpenBB | `pip install openbb` | Global data sources |
 
-### Run Examples
+---
+
+## 📁 Directory Structure
+
+```
+quant-system/
+├── QuantAgent/                # Main code repository
+│   ├── data/                  # Data layer
+│   │   ├── provider.py        # Data acquisition
+│   │   ├── storage.py         # DuckDB storage
+│   │   └── cleaner.py         # Data cleaning
+│   ├── strategies/            # Strategy layer
+│   │   ├── base/              # Strategy base class
+│   │   ├── momentum/          # Momentum strategy
+│   │   ├── event_driven/      # Event-driven strategy
+│   │   └── sentiment/         # Sentiment strategy
+│   ├── research/              # Research layer
+│   │   ├── backtest.py        # Backtest engine
+│   │   └── factor_eval.py     # Factor evaluation
+│   ├── risk/                  # Risk layer
+│   │   ├── risk_engine.py     # Risk engine
+│   │   └── portfolio.py       # Portfolio optimization
+│   ├── knowledge/             # Memory layer
+│   │   └── knowledge_base.py  # Hierarchical memory system
+│   ├── integrations/          # Integration layer
+│   │   ├── qlib_engine.py     # Qlib integration
+│   │   ├── vnpy_engine.py     # vnpy integration
+│   │   └── openbb_data.py     # OpenBB integration
+│   ├── mcp_server/            # MCP server
+│   │   ├── server.py          # MCP Server entry
+│   │   ├── tools_data.py      # Data tools
+│   │   └── tools_risk.py      # Risk tools
+│   ├── .claude/skills/        # Skill workflows
+│   ├── configs/               # Configuration files
+│   └── monitoring/            # Monitoring layer
+├── examples/                  # Usage examples
+├── tests/                     # Unit tests
+├── scripts/                   # Script entry points
+├── docs/                      # Documentation
+├── requirements.txt           # Dependencies
+├── pyproject.toml             # Project configuration
+└── LICENSE                    # License
+```
+
+---
+
+## 🎮 Run Examples
 
 ```bash
 # Quick start: Get data and run backtest
@@ -155,38 +249,25 @@ python examples/03_backtest.py --strategy momentum
 
 # Use knowledge base
 python examples/04_knowledge.py
-
-# LLM analysis
-python examples/05_llm_analysis.py
 ```
 
 ### Daily Research Workflow
 
 ```bash
-# Run daily research (without LLM)
-python -m scripts daily-research --no-llm
+# Run daily research
+python -m scripts daily-research
 
 # Run backtest
 python -m scripts backtest --strategy momentum --ticker 600519 --start 2025-01-01
 
 # Health check
 python -m scripts health_check
+
+# List all MCP tools
+python -m mcp_server.server --list-tools
 ```
 
-## 🤖 The Right Place for LLM
-
-```
-✅ Appropriate (via TradingAgents)     ❌ Inappropriate
-─────────────────────────────────────────────────────
-Technical Analysis (Market Analyst)    Direct trading decisions
-Fundamental Analysis                   Direct position generation
-Sentiment Analysis                     Replace risk control rules
-News Analysis                          Replace portfolio optimizer
-Bull/Bear Debate                       Replace execution engine
-Risk Debate                            Unconstrained free decisions
-```
-
-**In a nutshell: LLM is a researcher, not a trader.**
+---
 
 ## 🧪 Run Tests
 
@@ -204,17 +285,20 @@ pytest tests/test_momentum_strategy.py -v
 pytest --cov=quant_system --cov-report=html
 ```
 
+---
+
 ## 🌐 Open Source Project Integrations
 
 | Project | Purpose | Integration Method | Integration Module |
 |---------|---------|-------------------|-------------------|
 | **Qlib** | Research core | Direct import | `integrations/qlib_engine.py` |
 | **vnpy** | Execution core | Direct import | `integrations/vnpy_engine.py` |
-| **TradingAgents** | LLM Multi-Agent research | Direct import | `integrations/trading_agents.py` |
-| **OpenBB** | Data entry | Direct import | `integrations/openbb_data.py` |
+| **AKShare** | A-Shares data | pip install | `data/provider.py` |
+| **OpenBB** | Global data sources | pip install | `integrations/openbb_data.py` |
 | **Riskfolio-Lib** | Portfolio optimization | pip install | `risk/portfolio.py` |
 | **VectorBT** | Fast backtest | pip install | `research/backtest.py` |
-| **AKShare** | A-Shares data | pip install | `data/provider.py` |
+
+---
 
 ## 📊 Core Modules
 
@@ -230,23 +314,34 @@ class StrategyBase(ABC):
     kill_switch_condition()     # Circuit breaker condition
 ```
 
-### Knowledge Base Structure
+### MCP Tools Overview
 
-```
-knowledge/
-  daily/          Daily reports (Markdown)
-  weekly/         Weekly reports
-  monthly/        Monthly reports
-  quarterly/      Quarterly reports
-  annual/         Annual reports
-  events/         Event database (JSONL)
-  hypotheses/     Hypothesis library
-  failures/       Failure cases
-```
+35+ standardized tools for external Agent calls:
+
+- **Data Tools** (14): get_quote, get_history, get_factors, get_sector_stocks, update_data, ...
+- **Risk & Strategy Tools** (10): run_backtest, run_stress_test, run_brinson_attribution, ...
+- **Knowledge Tools** (11): search_events, wiki_search, get_daily_report, ...
+
+### Skill Workflows
+
+7 business process guides to tell Agent "what to do first, what to do next":
+
+| Skill | Purpose |
+|-------|---------|
+| sector-screening | Industry/concept sector stock screening |
+| daily-workflow | Daily research workflow |
+| backtest-workflow | Strategy backtesting workflow |
+| risk-assessment | Risk assessment workflow |
+| factor-research | Factor research workflow |
+| knowledge-exploration | Knowledge exploration workflow |
+| market-quick-check | Market quick check |
+
+---
 
 ## 🗺️ Development Roadmap
 
 ### Phase 1: Research + Reporting + Review ✅
+
 - [x] Data integration (AKShare + OpenBB)
 - [x] Qlib research engine integration
 - [x] Factor calculation and evaluation
@@ -256,31 +351,38 @@ knowledge/
 - [x] Riskfolio-Lib portfolio optimization
 - [x] Risk engine
 - [x] Monitoring and alerts
-- [x] TradingAgents multi-Agent integration
 
 ### Phase 2: Signal Engine + Backtesting ⚡
+
 - [x] Strategy plugin interface
 - [x] Momentum strategy implementation
-- [ ] Qlib LightGBM model training
+- [x] Event-driven strategy
+- [x] MCP server
+- [x] Skills workflow layer
 - [ ] Walk-forward validation
 
-### Phase 3: Simulation Trading
+### Phase 3: Extensible + High Performance + Security 🛡️
+
+- [ ] MCP tool auto-discovery
+- [ ] DuckDB query optimization
+- [ ] Factor calculation I/O optimization
+- [ ] Write tool dry-run
+- [ ] Financial data integration
+
+### Phase 4: Simulation & Live Trading 📈
+
 - [ ] vnpy simulated trading
 - [ ] Slippage and execution monitoring
-- [ ] Backtest vs live trading deviation analysis
-
-### Phase 4: Small-capacity Live Trading
 - [ ] vnpy CTP/IB connection
 - [ ] Risk circuit breaker mechanism
-- [ ] Real-time monitoring and alerts
 
-## 📝 License
+---
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙋‍♂️ Contributing
+## 🤝 Contributing
 
 Welcome to submit Issues and Pull Requests! Please follow these guidelines:
+
+### How to Contribute
 
 1. Fork the project
 2. Create a feature branch (`git checkout -b feature/foo`)
@@ -288,6 +390,46 @@ Welcome to submit Issues and Pull Requests! Please follow these guidelines:
 4. Push to the branch (`git push origin feature/foo`)
 5. Create a Pull Request
 
+### 🌟 Good First Issues
+
+These tasks are perfect for new contributors:
+
+- 📊 **Add a new data source adapter** - Add new data source adapters (e.g., Tushare, JoinQuant), refer to `data/provider.py`
+- 📈 **Implement a new strategy** - Implement new strategies (e.g., reversal, mean reversion), refer to `strategies/base/`
+- 🧪 **Add unit tests** - Add unit tests for data layer or strategy layer
+- 📖 **Improve documentation** - Improve MCP tool documentation or Skill workflow documentation
+- 🔌 **Add new MCP tool** - Add new MCP tools, refer to `mcp_server/tools_data.py`
+
+### Development Standards
+
+- Code formatting: Black + Ruff
+- Testing framework: pytest
+- Commit messages: Conventional Commits format
+
+### Issue Templates
+
+We provide two Issue templates:
+
+- **Data Source Request** - Request new data sources
+- **Strategy Sharing** - Share your strategy ideas or code
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙋‍♂️ Communication & Feedback
+
+- 🐛 **Bug Reports**: Submit Issue with reproduction steps
+- 💡 **Feature Requests**: Submit Feature Request
+- 📖 **Documentation Issues**: Submit Issue or directly modify docs/ directory
+- 💬 **Discussions**: Welcome to discuss strategies and usage in GitHub Discussions
+
 ---
 
 **LLM doesn't predict price movements; LLM improves the efficiency and quality of the entire research pipeline!** 🚀
+
+⭐ If this project helps you, please give it a Star! Your support is our driving force for continuous improvement!

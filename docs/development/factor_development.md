@@ -376,7 +376,7 @@ factor = df["close"].pct_change(20)
 
 ## 参考
 
-- [因子引擎源码](file:///E:/Code/量化交易/quant-system/research/factors.py)
-- [因子评估工具](file:///E:/Code/量化交易/quant-system/research/evaluator.py)
-- [行业中性化](file:///E:/Code/量化交易/quant-system/research/neutralization.py)
-- [衰减检测](file:///E:/Code/量化交易/quant-system/research/decay_detection.py)
+- [因子引擎源码](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/research/factors.py)
+- [因子评估工具](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/research/evaluator.py)
+- [行业中性化](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/research/neutralization.py)
+- [衰减检测](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/research/decay_detection.py)

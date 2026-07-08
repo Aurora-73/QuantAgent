@@ -65,21 +65,17 @@ pip install -r requirements.txt
 | 分组 | 包 |
 |------|-----|
 | Core | pandas, numpy, duckdb, pydantic, loguru, requests |
-| Data | akshare |
+| Data | akshare, baostock |
 | Research | vectorbt, riskfolio-lib |
-| LLM | openai, langchain, langgraph |
 | Monitoring | rich, schedule |
 
-#### 4. 配置 API Key（可选）
+#### 4. 配置环境变量（可选）
 
 ```bash
 cp configs/.env.example configs/.env
 ```
 
-编辑 `configs/.env`，填入你的 API Key：
-```
-OPENAI_API_KEY=sk-你的key
-```
+编辑 `configs/.env`，按需填入通知密钥（如 `SENDCHAN_SENDKEY_*`）。完整变量清单见 [`reference/configuration.md`](../reference/configuration.md)。
 
 #### 5. 验证安装
 
@@ -87,7 +83,7 @@ OPENAI_API_KEY=sk-你的key
 pytest tests/ -v
 ```
 
-预期结果：139 个单元测试全部通过。
+预期结果：单元测试全部通过（以 `pytest tests/` 输出为准）。
 
 ---
 
@@ -143,10 +139,6 @@ python -m scripts backtest --strategy momentum --ticker 600519 --start 2024-01-0
 ### 步骤 4：运行每日研究
 
 ```bash
-# 不使用 LLM
-python -m scripts daily-research --no-llm
-
-# 使用 LLM 生成报告
 python -m scripts daily-research
 ```
 
@@ -162,20 +154,11 @@ python -m scripts daily-research
     └───────── 层级记忆系统 ─────┘
 ```
 
-### LLM 的定位
+### MCP 定位
 
-> AI 不负责猜涨跌，AI 负责提高整个研究链路的效率和质量。
+> 本系统是 MCP Server：行情、因子、回测、风控、知识库能力暴露成工具，供 Claude/Codex 等外部 Agent 调用。系统内部不内置 LLM 调用，LLM 能力由调用方提供。
 
-LLM 用于：
-- 新闻事件抽取
-- 因子假设生成
-- 多角色分析
-- 报告撰写
-
-不用于：
-- 直接下单
-- 仓位管理
-- 风控决策
+详见 [`adr/0001-llm-boundary.md`](../adr/0001-llm-boundary.md)。
 
 ---
 
@@ -183,7 +166,7 @@ LLM 用于：
 
 ```bash
 # 每天收盘后
-python -m scripts daily-research --no-llm
+python -m scripts daily-research
 
 # 周末做因子研究
 python -m scripts factor-eval --all --start 2024-01-01
@@ -204,5 +187,5 @@ python -m scripts brinson --universe csi300 --benchmark 000300
 - [因子开发指南](development/factor_development.md) — 如何添加新因子
 - [回测最佳实践](research/backtesting.md) — 回测技巧和注意事项
 - [服务器运维](operations/server_runbook.md) — P1 闭环验证
-- [MCP Server](../mcp_server/server.py) — 32 个 MCP 工具，供外部 Agent 调用
+- [MCP Server](../mcp_server/server.py) — MCP 工具，供外部 Agent 调用
 - [故障排除](runbook/troubleshooting.md) — 常见问题解决

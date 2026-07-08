@@ -52,7 +52,7 @@ unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
 ## 三、项目结构
 
 ```
-quant-system/
+QuantAgent/
 ├── data/                  # DuckDB 数据库文件
 ├── scripts/               # 运行脚本（核心入口）
 │   ├── daily_research.py  # 每日研究流程（主流程）
@@ -194,7 +194,7 @@ python -m scripts.db_stats
 ```bash
 # 1. 克隆项目
 git clone git@github.com:Aurora-73/QuantAgent.git
-cd QuantAgent/quant-system
+cd QuantAgent
 
 # 2. 创建虚拟环境
 python -m venv .venv
@@ -284,15 +284,15 @@ sendchan_status_url = "https://sct.ftqq.com/push"
 **配置位置**: `configs/settings.py`
 
 ```python
-# 风控配置
-max_single_position = 0.10        # 单票最大仓位 10%
-max_sector_exposure = 0.30        # 行业最大暴露 30%
-max_total_exposure = 1.0          # 总暴露上限
-max_daily_turnover = 0.20         # 日换手率限制 20%
-max_drawdown_stop = -0.05         # 最大回撤熔断 5%
-daily_loss_limit = -0.02          # 日亏损限额 2%
-min_daily_volume = 1000000        # 最小日成交量
-volatility_cap = 0.03             # 波动率上限
+# 风控配置（与 reference/configuration.md 保持一致）
+max_single_position = 0.05        # 单票最大仓位 5%
+max_sector_exposure = 0.20        # 行业最大暴露 20%
+max_total_exposure = 1.00         # 总敞口上限 100%
+max_daily_turnover = 0.10         # 日换手率限制 10%
+max_drawdown_stop = -0.05         # 最大回撤熔断 -5%
+daily_loss_limit = -0.02          # 日亏损限额 -2%
+min_daily_volume = 50_000_000     # 最小日成交量 5000万
+volatility_cap = 3.0              # 波动率上限 3倍
 ```
 
 ---
@@ -301,15 +301,17 @@ volatility_cap = 0.03             # 波动率上限
 
 ### 7.1 数据库增长预期
 
+> 历史值为快照，当前行数以 `python -m scripts.db_stats` 实时输出为准。下表「P1后预期」为规划期估算。
+
 | 指标 | P0前 | P0后 | P1后预期 |
 |------|------|------|----------|
-| 股票日线 | 237,907 | 452,146 | ~500,000 |
-| 因子行数 | 881,085 | 11,345,102 | ~12,000,000 |
-| 事件数 | 56 | 86 | ~100+ |
-| 预测数 | 1 | 3 | ~5+ |
-| 决策记忆 | 3 | 8 | ~10+ |
-| 日报数 | 29 | 30 | ~31+ |
-| 因子评估 | 不存在 | 33条 | ~60+ |
+| 股票日线 | 历史快照 | 历史快照 | ~500,000 |
+| 因子行数 | 历史快照 | 历史快照 | ~12,000,000 |
+| 事件数 | 历史快照 | 历史快照 | ~100+ |
+| 预测数 | 历史快照 | 历史快照 | ~5+ |
+| 决策记忆 | 历史快照 | 历史快照 | ~10+ |
+| 日报数 | 历史快照 | 历史快照 | ~31+ |
+| 因子评估 | 不存在 | 历史快照 | ~60+ |
 
 ### 7.2 运行成功标志
 

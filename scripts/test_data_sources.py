@@ -71,7 +71,7 @@ df = DataProvider.get_stock_daily("603005", start_date="2026-06-01", end_date="2
 check("603005 baostock 有数据", not df.empty, f"empty, shape={df.shape}")
 if not df.empty:
     check("包含 turnover 列", "turnover" in df.columns, f"columns={list(df.columns)}")
-    check("包含 pct_chg 列", "pct_chg" in df.columns)
+    check("包含 pct_change 列", "pct_change" in df.columns)
     check("date 是索引", df.index.name == "date", f"index={df.index.name}")
     vol_col = df.get("volume", df.get("成交量"))
     check("成交量 > 0", vol_col is not None and vol_col.iloc[-1] > 0 if vol_col is not None else False)

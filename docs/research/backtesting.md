@@ -537,6 +537,6 @@ def detect_overfitting(backtest_result, walk_forward_result):
 
 ## 参考
 
-- [回测引擎源码](file:///E:/Code/量化交易/quant-system/research/backtest.py)
-- [Walk-Forward 验证](file:///E:/Code/量化交易/quant-system/research/walk_forward.py)
-- [回测指标计算](file:///E:/Code/量化交易/quant-system/research/metrics.py)
+- [回测引擎源码](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/research/backtest.py)
+- [Walk-Forward 验证](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/research/walk_forward.py)
+- [回测指标计算](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/research/metrics.py)

@@ -114,13 +114,13 @@ class TestCleanDailyData:
             "low": [8, 9, 10, 11, -np.inf],
             "close": [11, 12, 13, 14, 15],
             "volume": [1000, 2000, 3000, 4000, 5000],
-            "pct_chg": [-30, 5, 3, 2, 30]
+            "pct_change": [-30, 5, 3, 2, 30]
         })
         result = DataCleaner.clean_daily_data(df)
         assert result.isna().sum().sum() == 0
         assert not np.any(np.isinf(result.values))
-        assert result["pct_chg"].min() >= -20
-        assert result["pct_chg"].max() <= 20
+        assert result["pct_change"].min() >= -20
+        assert result["pct_change"].max() <= 20
 
 
 class TestCleanValuationData:

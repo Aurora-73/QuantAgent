@@ -1,5 +1,47 @@
 # 变更记录
 
+## 2026-07-08
+
+### Skills 层构建
+
+- 创建 `.claude/skills/` 目录，包含 5 个 skill 文件：`sector-screening.md`（行业选股）、`daily-workflow.md`（每日研究）、`backtest-workflow.md`（回测工作流）、`risk-assessment.md`（风险评估）、`factor-research.md`（因子研究）
+- 每个 skill 文件包含 frontmatter（name/description/requires_mcp）、步骤说明、fallback 指引、常见问题
+- 更新 `mcp_server/server.py`：为 20+ 个 MCP 工具的 description 添加 skill 反链（如 `参见skill:sector-screening`）
+- 更新 `docs/plan/phase-3-improvement-plan.md`：将 Skills 层作为 P0 任务，修正 DuckDB 索引认知、因子计算瓶颈认知，重排任务优先级
+
+### Skills 层补全
+
+- 新增 `knowledge-exploration.md`：覆盖搜索事件、决策、假设、文档等 10 个知识工具
+- 新增 `market-quick-check.md`：覆盖市场概况、个股行情、指数数据、日历等快速查询工具
+- 强化 `sector-screening.md` 步骤 3：添加具体的相关性计算方法和综合评分代码示例
+- 更新 `mcp_server/server.py`：为剩余 15 个工具添加 skill 反链，实现 35 个工具全覆盖
+
+### 新建 Phase 3 改进计划
+
+- 创建 `docs/plan/phase-3-improvement-plan.md`：基于六维分析（功能完整性/代码质量/性能/体验/安全/扩展）制定可执行任务卡片，含 7 项任务（P3.1-P3.7）、优先级总览表、风险与依赖、验收标准
+- 更新 `docs/README.md`：索引补入 `phase-3-improvement-plan.md`
+
+## 2026-07-07
+
+### 文档系统性整理（10 个工作流）
+
+- **WS1 数据去数字化**：移除 `project-status.md`、`CLAUDE.md`、`roadmap.md`、`phase-2-implementation-plan.md`、`data-quality-improvement-plan.md`、`server_runbook.md`、`data_schema.md`、`mcp-capabilities.md`、`monitoring.md` 中硬编码的行数/股票数/测试数，统一改为指针（`python -m scripts.db_stats` / `pytest tests/` / `python -m mcp_server.server --list-tools`）
+- **WS2 LLM 段落删除**：移除 `cli_reference.md` 的 `--no-llm` 参数、`configuration.md` 的 LLM 配置段、`data_schema.md` 的 LLM 结构化输出段、`acceptance-criteria.md` §2.7 LLM 层验收、`monitoring.md` 的 LLM API 检查项、`security.md` 的 OPENAI_API_KEY 内部配置；重构 `verification_loop.md` 为通用预测验证（信号源由 LLM 改为外部 Agent）
+- **WS3 Windows 路径修复**：将 10 个文档中的 `file:///E:/Code/...`、`/e/Code/...`、`E:\Code\...` 路径统一替换为 Linux 路径；`scheduler.md` 的 Windows Task Scheduler 示例改为 crontab 示例
+- **WS4 风险参数统一**：`server_runbook.md` §6.2 风控参数对齐 `configuration.md` canonical 值（5%/20%/10%，min_daily_volume=5000万，volatility_cap=3.0）
+- **WS5 文档头格式统一**：`scheduler.md`、`monitoring.md`、`risk_management.md`、`disaster_recovery.md`、`security.md`、`mcp-capabilities.md` 添加规范化 header（生成日期/最后更新/适用场景）
+- **WS6 索引补全**：`docs/README.md` 索引补充 `mcp-capabilities.md`、`adr/0000-template.md`、3 个 plan 文档、archive 文件列表；修正 wiki 位置为 `docs/wiki/`
+- **WS7 过时引用修复**：`acceptance-criteria.md` 修复 `crispy-wondering-petal.md`/`bug.md` 改名引用；`cli_reference.md` 移除未注册的 `reversal` 策略；`data-source-analysis.md` 更新「news 是死胡同」过时结论
+- **WS8 MCP 工具数量统一**：`mcp-capabilities.md` 移除「35 个」硬编码，改为 `--list-tools` 指针
+- **WS9 changelog 重构**：新增本条目
+- **WS10 关键信息高亮**：`phase-0-issues.md`、`phase-a-b-plan-legacy.md` 添加归档横幅
+
+### 收尾补遗（WS1/WS2/WS10 遗漏清理）
+
+- **WS2 遗漏清理**：`quickstart.md`（删 API Key 段 / `--no-llm`×2 / 重写"LLM 的定位"为 MCP 边界）、`troubleshooting.md`（删 §7 LLM API 调用失败）、`strategy_development.md`（删 `--no-llm` checklist 项）、`linux-server-test-plan.md`（L30/L132-136/L281 清理 LLM 残留）、`configuration.md`（删 OPENAI_API_KEY/OPENAI_BASE_URL 表行 + LLM 配置代码 + 环境变量示例）、`cli_reference.md`（删 OPENAI_API_KEY 表行 + LLM 调用注意事项）
+- **WS10 补全**：`issue-001-duckdb-index-error.md` 补归档横幅（与另 2 个归档文件一致）
+- **WS1 遗漏**：`quickstart.md` 硬编码测试数 `139` 改为 `pytest tests/` 指针
+
 ## 2026-07-06
 
 ### Bug 修复
@@ -150,7 +192,7 @@ quant-system/
 
 #### 克隆的开源项目
 ```
-量化交易/
+quant-system/
 ├── vnpy/              国内量化交易框架
 ├── TradingAgents/     多Agent LLM交易框架
 ├── qlib/              微软AI量化平台
@@ -162,7 +204,7 @@ quant-system/
 ├── vectorbt/          向量化回测
 ├── Riskfolio-Lib/     组合优化
 ├── FinMem-LLM-StockTrading/  LLM记忆交易
-└── quant-system/      本项目 (自建)
+└── QuantAgent/         本项目 (自建)
 ```
 
 ### v2 更新：集成开源项目

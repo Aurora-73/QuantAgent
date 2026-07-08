@@ -3,7 +3,7 @@ MCP Server — QuantSystem
 
 MCP tools for Claude/Codex/Trae integration, organized as:
 
-  tools_data.py      → 行情数据、报价、历史、因子、指数
+  tools_data.py      → 行情数据、报价、历史、因子、指数、板块
   tools_risk.py      → 风险、压力测试、Brinson、衰减检测、回测
   tools_knowledge.py → 报告、事件、Wiki、决策、情绪
 
@@ -11,13 +11,13 @@ MCP tools for Claude/Codex/Trae integration, organized as:
 
     python -m mcp_server.server --list-tools
 
-输出工具清单（名称 + readonly 标记 + 描述），当前 30 个（9 data + 10 risk + 11 knowledge）。
+输出工具清单（名称 + readonly 标记 + 描述），工具完整清单见 `python -m mcp_server.server --list-tools`。
 
 
 配置步骤
 --------
 
-1. 确认 Python 环境位于 quant-system/.venv
+1. 确认 Python 环境位于 QuantAgent/.venv
 2. 找到 python.exe 的绝对路径
 3. 在 MCP 客户端的配置文件中添加以下条目
 
@@ -35,7 +35,7 @@ Claude Desktop (claude.json / .claude.json)
       "command": "C:\\Users\\Aurora\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
       "args": ["-m", "mcp_server.server"],
       "env": {
-        "PYTHONPATH": "E:\\Code\\量化交易\\quant-system"
+        "PYTHONPATH": "E:\\Code\\quant-system\\QuantAgent"
       }
     }
 
@@ -49,14 +49,14 @@ PYTHONPATH 的作用：server.py 第 18 行会执行 sys.path.insert(0, ...) 来
 
 1. 不要依赖 cwd 选项
    Claude Desktop 配置中的 cwd 项被忽略，进程始终在 Python 安装目录或系统临时目录启动。
-   必须用 "env": { "PYTHONPATH": "absolute\\path\\to\\quant-system" } 替代。
+   必须用 "env": { "PYTHONPATH": "absolute\\path\\to\\QuantAgent" } 替代。
 
 2. PYTHONPATH 必须用绝对路径
    相对路径（如 "."）的工作目录不确定，导致模块导入失败。始终使用完整路径。
 
 3. Windows 路径转义
-   JSON 中反斜杠需要双写：E:\\Code\\量化交易\\quant-system
-   也可以用正斜杠：E:/Code/量化交易/quant-system
+   JSON 中反斜杠需要双写：E:\\Code\\quant-system\\QuantAgent
+   也可以用正斜杠：E:/Code/quant-system/QuantAgent
 
 4. 虚拟环境
    如果使用 .venv，command 应指向 .venv\\Scripts\\python.exe，而不是系统 Python。
@@ -64,10 +64,10 @@ PYTHONPATH 的作用：server.py 第 18 行会执行 sys.path.insert(0, ...) 来
 
     "QuantSystem": {
       "type": "stdio",
-      "command": "E:\\Code\\量化交易\\quant-system\\.venv\\Scripts\\python.exe",
+      "command": "E:\\Code\\quant-system\\QuantAgent\\.venv\\Scripts\\python.exe",
       "args": ["-m", "mcp_server.server"],
       "env": {
-        "PYTHONPATH": "E:\\Code\\量化交易\\quant-system"
+        "PYTHONPATH": "E:\\Code\\quant-system\\QuantAgent"
       }
     }
 
@@ -83,7 +83,7 @@ Codex (config.toml)
   type = "stdio"
   command = "python"
   args = ["-m", "mcp_server.server"]
-  cwd = "E:/Code/量化交易/quant-system"
+  cwd = "E:/Code/quant-system/QuantAgent"
 
 Codex 支持 cwd，不需要 PYTHONPATH。
 

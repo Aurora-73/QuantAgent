@@ -1,6 +1,6 @@
 # 风控体系文档
 
-> 量化交易风险控制体系说明。
+> 生成日期：2026-07-06 | 最后更新：2026-07-07 | 适用场景：风险控制体系说明
 
 ---
 
@@ -395,7 +395,7 @@ risk:
 
 ## 参考
 
-- [风控引擎源码](file:///E:/Code/量化交易/quant-system/risk/risk_engine.py)
-- [组合优化](file:///E:/Code/量化交易/quant-system/risk/portfolio.py)
-- [压力测试](file:///E:/Code/量化交易/quant-system/risk/stress_test.py)
-- [Brinson 归因](file:///E:/Code/量化交易/quant-system/risk/brinson.py)
+- [风控引擎源码](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/risk/risk_engine.py)
+- [组合优化](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/risk/portfolio.py)
+- [压力测试](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/risk/stress_test.py)
+- [Brinson 归因](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/risk/brinson.py)

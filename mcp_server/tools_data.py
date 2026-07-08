@@ -193,14 +193,44 @@ def get_market_overview() -> str:
 
 
 def search_tickers(query: str) -> str:
-    """搜索股票代码或名称"""
+    """搜索股票代码或名称（支持中文名称模糊搜索）"""
     try:
         storage = DataStorage()
+        # 1. 优先按代码搜索 DB
         df = storage.conn.execute(
             "SELECT DISTINCT ticker FROM stock_daily WHERE ticker LIKE ? LIMIT 20",
             [f"%{query}%"],
         ).fetchdf()
         tickers = [row["ticker"] for _, row in df.iterrows()]
+
+        # 2. 如果代码匹配不足，尝试通过 AKShare spot 按名称搜索
+        if len(tickers) < 3:
+            try:
+                from data.provider import HAS_AKSHARE, _no_proxy
+                import akshare as ak
+                if HAS_AKSHARE:
+                    with _no_proxy():
+                        spot_df = ak.stock_zh_a_spot_em()
+                    if not spot_df.empty:
+                        # 中文模糊匹配名称
+                        name_col = "名称" if "名称" in spot_df.columns else (
+                            spot_df.columns[1] if len(spot_df.columns) > 1 else None
+                        )
+                        code_col = "代码" if "代码" in spot_df.columns else (
+                            spot_df.columns[0] if len(spot_df.columns) > 0 else None
+                        )
+                        if name_col and code_col:
+                            query_lower = query.lower()
+                            for _, row in spot_df.iterrows():
+                                name = str(row.get(name_col, ""))
+                                code = str(row.get(code_col, ""))
+                                if query_lower in name.lower() or query_lower in code.lower():
+                                    if code not in tickers:
+                                        tickers.append(code)
+                            tickers = tickers[:20]
+            except Exception:
+                pass  # AKShare 不可用时静默回退
+
         return json.dumps({"query": query, "count": len(tickers), "tickers": tickers},
                           ensure_ascii=False)
     except Exception as e:
@@ -292,6 +322,124 @@ def update_data(universe: str = "csi300", start_date: str = "") -> str:
         "message": "数据更新完成" if success else f"数据更新失败: {error}",
         "stdout": stdout[:2000],
     }, ensure_ascii=False)
+
+
+# ============================================================
+# 行业 / 概念板块工具 (P1)
+# ============================================================
+
+def get_sector_list(sector_type: str = "concept") -> str:
+    """
+    获取行业板块或概念板块列表
+
+    Args:
+        sector_type: "industry" (申万行业) 或 "concept" (概念板块，默认)
+    """
+    try:
+        from data.sectors import SectorData
+        if sector_type == "industry":
+            boards = SectorData.get_industry_list()
+        else:
+            boards = SectorData.get_concept_list()
+        return json.dumps({
+            "sector_type": sector_type,
+            "count": len(boards),
+            "boards": boards,
+        }, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+
+
+def get_sector_stocks(sector_name: str, sector_type: str = "concept") -> str:
+    """
+    获取指定板块的成分股列表
+
+    Args:
+        sector_name: 板块名称，如 "半导体"、"AI芯片"
+        sector_type: "industry" 或 "concept"（默认）
+
+    Example:
+        get_sector_stocks("半导体") → 返回半导体概念板块的成分股
+    """
+    try:
+        from data.sectors import SectorData
+        stocks = SectorData.get_board_stocks(sector_name, sector_type)
+        if not stocks:
+            # 尝试搜索匹配
+            matches = SectorData.search_board(sector_name, sector_type)
+            if matches:
+                first_match = matches[0]["name"]
+                stocks = SectorData.get_board_stocks(first_match, sector_type)
+                return json.dumps({
+                    "sector_name": first_match,
+                    "sector_type": sector_type,
+                    "count": len(stocks),
+                    "stocks": stocks,
+                    "note": f"精确匹配失败，使用最接近的板块: {first_match}",
+                }, ensure_ascii=False)
+            return json.dumps({
+                "sector_name": sector_name,
+                "sector_type": sector_type,
+                "count": 0,
+                "stocks": [],
+                "error": f"未找到板块 '{sector_name}'",
+            }, ensure_ascii=False)
+        return json.dumps({
+            "sector_name": sector_name,
+            "sector_type": sector_type,
+            "count": len(stocks),
+            "stocks": stocks,
+        }, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+
+
+def get_sector_index(sector_name: str, sector_type: str = "concept", days: int = 60) -> str:
+    """
+    构建并返回板块等权指数日线数据
+
+    从成分股日线数据构建等权平均指数，含 open/high/low/close/volume/pct_change。
+
+    Args:
+        sector_name: 板块名称，如 "半导体"
+        sector_type: "industry" 或 "concept"（默认）
+        days: 返回最近多少天的数据
+
+    Note: 首次调用需从数据源拉取所有成分股日线，耗时较长（30s-2min）
+    """
+    try:
+        import datetime
+        from data.sectors import SectorData
+        start = (datetime.date.today() - datetime.timedelta(days=days)).strftime("%Y-%m-%d")
+        df = SectorData.build_board_index(sector_name, sector_type, start_date=start)
+        if df.empty:
+            return json.dumps({
+                "sector_name": sector_name,
+                "sector_type": sector_type,
+                "count": 0,
+                "data": [],
+                "error": "无法构建板块指数，可能是数据源不可用或无成分股数据",
+            }, ensure_ascii=False)
+        records = []
+        for idx, row in df.tail(days).iterrows():
+            records.append({
+                "date": str(idx.date()) if hasattr(idx, 'date') else str(idx),
+                "close": round(float(row.get("close", 0)), 2),
+                "open": round(float(row.get("open", 0)), 2) if row.get("open") else None,
+                "high": round(float(row.get("high", 0)), 2) if row.get("high") else None,
+                "low": round(float(row.get("low", 0)), 2) if row.get("low") else None,
+                "volume": int(row.get("volume", 0)),
+                "pct_change": round(float(row.get("pct_change", 0)), 4) if pd.notna(row.get("pct_change")) else 0.0,
+                "stock_count": int(row.get("stock_count", 0)),
+            })
+        return json.dumps({
+            "sector_name": sector_name,
+            "sector_type": sector_type,
+            "count": len(records),
+            "data": records,
+        }, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
 def run_daily_research(target_date: str = "") -> str:

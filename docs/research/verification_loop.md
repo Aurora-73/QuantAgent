@@ -1,6 +1,6 @@
 # 验证闭环
 
-> 基于 loverMentor 的预测验证与决策记忆体系。
+> 预测验证与决策记忆体系：追踪各类信号源（外部 Agent / 因子 / 策略）的预测，自动验证并积累经验。
 
 ---
 
@@ -11,7 +11,7 @@
 ```
 预测 → 执行 → 验证 → 反馈 → 调整
   ↓      ↓      ↓      ↓      ↓
- LLM   策略   回测   记忆   优化
+信号源  策略   回测   记忆   优化
 ```
 
 ### 核心组件
@@ -39,7 +39,7 @@ prediction_id = tracker.record(
     ticker="600519",
     prediction="未来5日上涨",
     confidence=0.7,
-    source="LLM",
+    source="agent",  # 外部 Agent 预测（LLM 能力由调用方提供）
     timestamp="2026-07-02"
 )
 
@@ -63,7 +63,7 @@ print(f"预测准确率: {result['accuracy']}")
   "prediction": "未来5日上涨",
   "direction": "up",
   "confidence": 0.7,
-  "source": "LLM",
+  "source": "agent",
   "created_at": "2026-07-02",
   "verified_at": "2026-07-07",
   "actual_return": 0.03,
@@ -75,12 +75,12 @@ print(f"预测准确率: {result['accuracy']}")
 ### 预测准确率
 
 ```bash
-python -m scripts prediction-accuracy --source LLM --period 30
+python -m scripts prediction-accuracy --source agent --period 30
 ```
 
 ```json
 {
-  "source": "LLM",
+  "source": "agent",
   "total_predictions": 150,
   "correct_predictions": 82,
   "accuracy": 0.547,
@@ -292,7 +292,7 @@ print(f"信号权重: {weights}")
 ```
 提出假设 → 回测验证 → 样本外测试 → 实盘验证 → 确认/拒绝
    ↓          ↓          ↓          ↓          ↓
-  LLM      回测引擎   Walk-Forward  模拟盘    知识入库
+  研究      回测引擎   Walk-Forward  模拟盘    知识入库
 ```
 
 ### 假设验证
@@ -369,7 +369,7 @@ print(f"预警: {alerts}")
 ├─────────────────────────────────────────────────────────────┤
 │  预测准确率                                                 │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │ LLM: 54.7% | 因子: 62.3% | 策略: 57.8%           │    │
+│  │ Agent: 54.7% | 因子: 62.3% | 策略: 57.8%         │    │
 │  └─────────────────────────────────────────────────────┘    │
 ├─────────────────────────────────────────────────────────────┤
 │  决策记忆                                                   │
@@ -415,7 +415,6 @@ print(f"预警: {alerts}")
 
 ## 参考
 
-- [预测追踪](file:///E:/Code/量化交易/quant-system/verification/predictor_tracker.py)
-- [决策记忆](file:///E:/Code/量化交易/quant-system/verification/decision_memory.py)
-- [经验学习](file:///E:/Code/量化交易/quant-system/verification/lesson_learner.py)
-- [loverMentor](https://github.com/.../loverMentor)
+- [预测追踪](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/verification/predictor_tracker.py)
+- [决策记忆](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/verification/decision_memory.py)
+- [经验学习](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/verification/lesson_learner.py)

@@ -1,6 +1,6 @@
 # 定时任务文档
 
-> Quant System 定时任务配置与管理说明。
+> 生成日期：2026-07-06 | 最后更新：2026-07-07 | 适用场景：定时任务配置与管理
 
 ---
 
@@ -248,8 +248,8 @@ After=network.target
 [Service]
 Type=simple
 User=quant
-WorkingDirectory=/opt/quant-system
-ExecStart=/opt/quant-system/.venv/bin/python -m scripts scheduler start
+WorkingDirectory=/opt/quant-system/QuantAgent
+ExecStart=/opt/quant-system/QuantAgent/.venv/bin/python -m scripts scheduler start
 Restart=always
 RestartSec=30
 
@@ -270,15 +270,12 @@ systemctl status quant-scheduler
 journalctl -u quant-scheduler -f
 ```
 
-### Windows 部署
+### crontab 部署（简化方案）
 
-```powershell
-# 使用任务计划程序
-# 触发器: 每天 16:00
-# 操作: 启动程序
-# 程序/脚本: python
-# 参数: -m scripts daily-research --no-llm
-# 起始于: E:\Code\量化交易\quant-system
+```bash
+# crontab 定时任务（收盘后执行）
+# 每个交易日 16:00 运行每日研究
+0 16 * * 1-5 cd /home/edalab/Desktop/cme_code/quant-system/QuantAgent && .venv/bin/python -m scripts daily-research
 ```
 
 ---
@@ -309,6 +306,6 @@ journalctl -u quant-scheduler -f
 
 ## 参考
 
-- [调度器源码](file:///E:/Code/量化交易/quant-system/scripts/scheduler.py)
-- [每日研究](file:///E:/Code/量化交易/quant-system/scripts/daily_research.py)
-- [数据更新](file:///E:/Code/量化交易/quant-system/scripts/update_data.py)
+- [调度器源码](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/scripts/scheduler.py)
+- [每日研究](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/scripts/daily_research.py)
+- [数据更新](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/scripts/update_data.py)

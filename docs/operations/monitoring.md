@@ -1,6 +1,6 @@
 # 监控指南
 
-> Quant System 监控与告警体系说明。
+> 生成日期：2026-07-06 | 最后更新：2026-07-07 | 适用场景：监控与告警体系
 
 ---
 
@@ -193,9 +193,8 @@ python -m scripts health_check
 |--------|------|---------|
 | **数据库连接** | DuckDB连接是否正常 | ✅ |
 | **数据时效** | 最新数据日期 | ✅ 今天 |
-| **数据完整性** | 股票数量 | ✅ 289+ |
+| **数据完整性** | 股票数量 | ✅ 数量以 db_stats 为准 |
 | **因子覆盖** | 因子注册数量 | ✅ 29个 |
-| **LLM API** | OpenAI API Key | ⚠️ 可选 |
 | **数据源** | AKShare连接 | ✅ |
 | **回测持久化** | 回测表是否就绪 | ✅ |
 
@@ -207,9 +206,8 @@ python -m scripts health_check
   "checks": [
     {"name": "database", "status": "pass", "detail": "DuckDB连接正常"},
     {"name": "data_freshness", "status": "pass", "detail": "最新数据2026-07-02"},
-    {"name": "data_completeness", "status": "pass", "detail": "289只股票"},
+    {"name": "data_completeness", "status": "pass", "detail": "股票数量以 db_stats 为准"},
     {"name": "factor_coverage", "status": "pass", "detail": "29个因子"},
-    {"name": "llm_api", "status": "warn", "detail": "未配置OPENAI_API_KEY"},
     {"name": "data_source", "status": "pass", "detail": "AKShare正常"},
     {"name": "backtest_persistence", "status": "pass", "detail": "表就绪"}
   ]
@@ -256,7 +254,7 @@ with ProcessPoolExecutor() as executor:
 ├─────────────────────────────────────────────────────────────┤
 │  [OK] 系统状态: healthy                                     │
 │  [OK] 数据日期: 2026-07-02                                  │
-│  [OK] 股票数量: 289                                         │
+│  [OK] 股票数量: (见 db_stats)                               │
 │  [OK] 因子数量: 29                                          │
 ├─────────────────────────────────────────────────────────────┤
 │  策略绩效                                                   │
@@ -309,6 +307,6 @@ with ProcessPoolExecutor() as executor:
 
 ## 参考
 
-- [指标引擎](file:///E:/Code/量化交易/quant-system/monitoring/metrics.py)
-- [告警管理](file:///E:/Code/量化交易/quant-system/monitoring/alerts.py)
-- [健康检查](file:///E:/Code/量化交易/quant-system/scripts/health_check.py)
+- [指标引擎](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/monitoring/metrics.py)
+- [告警管理](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/monitoring/alerts.py)
+- [健康检查](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/scripts/health_check.py)

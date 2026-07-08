@@ -1,6 +1,6 @@
 # 灾难恢复
 
-> Quant System 灾难恢复与数据备份说明。
+> 生成日期：2026-07-06 | 最后更新：2026-07-07 | 适用场景：灾难恢复与数据备份
 
 ---
 
@@ -218,5 +218,5 @@ Error: configs/.env not found
 
 ## 参考
 
-- [备份脚本](file:///E:/Code/量化交易/quant-system/scripts/backup.py)
-- [健康检查](file:///E:/Code/量化交易/quant-system/scripts/health_check.py)
+- [备份脚本](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/scripts/backup.py)
+- [健康检查](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/scripts/health_check.py)

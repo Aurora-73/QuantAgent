@@ -10,14 +10,14 @@
 
 ### 1.1 代码同步
 ```bash
-# 假设服务器目录为 ~/quant-system
+# 假设服务器目录为 ~/quant-system/QuantAgent
 rsync -avz --exclude='.venv' --exclude='__pycache__' --exclude='*.pyc' \
-  /e/Code/量化交易/quant-system/ user@server:~/quant-system/
+  /home/edalab/Desktop/cme_code/quant-system/QuantAgent/ user@server:~/quant-system/QuantAgent/
 ```
 
 ### 1.2 依赖安装
 ```bash
-cd ~/quant-system
+cd ~/quant-system/QuantAgent
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -27,7 +27,7 @@ pip install -r requirements.txt
 ```bash
 # 复制并编辑 .env
 cp configs/.env.example configs/.env
-# 填入 OPENAI_API_KEY（如需 LLM 功能）、SENDCHAN_SENDKEY_*（如需通知）
+# 填入 SENDCHAN_SENDKEY_*（如需通知）
 
 # 验证配置
 python -m scripts.health_check
@@ -36,7 +36,7 @@ python -m scripts.health_check
 ### 1.4 数据库迁移（如需重建）
 ```bash
 # 方案 A：直接同步 Windows 上的 DuckDB 文件（推荐，已包含 301 只股票数据）
-rsync -avz data/quant.duckdb user@server:~/quant-system/data/
+rsync -avz data/quant.duckdb user@server:~/quant-system/QuantAgent/data/
 
 # 方案 B：全新初始化（耗时约 30 分钟）
 python -m scripts.update_data --universe csi300
@@ -129,10 +129,6 @@ if conn.execute(\"SELECT COUNT(*) FROM research.factor_evaluation\").fetchone()[
 
 **命令**：
 ```bash
-# 非 LLM 模式（验证流程）
-python -m scripts.daily_research --no-llm
-
-# 如配置了 OPENAI_API_KEY，可启用 LLM 模式
 python -m scripts.daily_research
 ```
 
@@ -278,7 +274,7 @@ python -m scripts.walk_forward --strategy momentum --tickers 600519 --start 2022
    └─ evaluate_factors + detect_decay
 
 5. daily_research 全流程（10-30 分钟）★ 耗 CPU
-   └─ daily_research --no-llm
+   └─ daily_research
 
 6. 回测验证（10-20 分钟）★ 耗 CPU
    └─ backtest --strategy momentum

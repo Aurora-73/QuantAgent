@@ -1,5 +1,7 @@
 # Issue-001: DuckDB 索引删除失败错误
 
+> ⚠️ 本文档已归档（2026-07-07），内容仅作历史参考。
+
 ## 问题描述
 
 在执行 `python -m scripts.update_data --universe csi300` 更新指数数据时，DuckDB 抛出以下错误：
@@ -17,7 +19,7 @@ FATAL Error: Failed: database has been invalidated because of a previous fatal e
 ## 发现位置
 
 - 文件: `scripts/update_data.py`
-- 触发位置: 更新指数数据步骤 ([第60-67行](file:///E:/Code/量化交易/quant-system/scripts/update_data.py#L60-L67))
+- 触发位置: 更新指数数据步骤 ([第60-67行](file:///home/edalab/Desktop/cme_code/quant-system/QuantAgent/scripts/update_data.py#L60-L67))
 - 调用方法: `storage.save_index_daily()`
 
 ## 初步判断原因
