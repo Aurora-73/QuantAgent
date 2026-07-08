@@ -103,34 +103,44 @@ class HealthChecker:
             return
 
         try:
-            import duckdb
-            conn = duckdb.connect(str(db_path))
-            result = conn.execute(
-                "SELECT MAX(date) FROM stock_daily"
-            ).fetchone()
-            conn.close()
+            from data.storage import DataStorage, FreshnessStatus
+            storage = DataStorage()
 
-            if result and result[0]:
-                latest = result[0]
-                if isinstance(latest, str):
-                    latest = date.fromisoformat(latest)
-                elif hasattr(latest, 'date'):
-                    latest = latest.date()
-                days_behind = (date.today() - latest).days
+            status_map = {
+                FreshnessStatus.FRESH.value: "pass",
+                FreshnessStatus.STALE.value: "warn",
+                FreshnessStatus.OUTDATED.value: "fail",
+            }
 
-                if days_behind <= 1:
-                    self._add_result("数据时效", "pass",
-                                   f"最新数据日期 {latest} ({days_behind}天前)")
-                elif days_behind <= 3:
-                    self._add_result("数据时效", "warn",
-                                   f"数据滞后 {days_behind} 天 (最新: {latest})",
-                                   "运行 python -m scripts update-data")
-                else:
-                    self._add_result("数据时效", "fail",
-                                   f"数据严重滞后 {days_behind} 天 (最新: {latest})",
-                                   "立即运行 python -m scripts update-data")
+            messages = []
+            worst_status = "pass"
+            worst_priority = 0
+            priority_map = {"pass": 0, "warn": 1, "fail": 2}
+
+            for table in ["stock_daily", "index_daily", "factors"]:
+                try:
+                    info = storage.get_freshness(table)
+                    level = status_map.get(info["status"], "warn")
+                    messages.append(f"{table}: {info['last_date']} ({info['status']})")
+                    if priority_map[level] > worst_priority:
+                        worst_status = level
+                        worst_priority = priority_map[level]
+                except Exception as e:
+                    messages.append(f"{table}: 检查失败 ({e})")
+                    if priority_map["warn"] > worst_priority:
+                        worst_status = "warn"
+                        worst_priority = priority_map["warn"]
+
+            storage.close()
+            detail = " | ".join(messages)
+            if worst_status == "pass":
+                self._add_result("数据时效", "pass", detail)
+            elif worst_status == "warn":
+                self._add_result("数据时效", "warn", detail,
+                               "运行 python -m scripts.update_data --incremental")
             else:
-                self._add_result("数据时效", "warn", "无数据记录", "运行数据更新")
+                self._add_result("数据时效", "fail", detail,
+                               "立即运行 python -m scripts.update_data --incremental")
         except Exception as e:
             self._add_result("数据时效", "warn", str(e))
 

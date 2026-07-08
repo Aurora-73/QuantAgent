@@ -15,7 +15,8 @@ DuckDB 优势：
 """
 import json
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
@@ -26,11 +27,35 @@ from loguru import logger
 from configs.settings import settings
 
 try:
+    from .optimizations import apply_optimizations, save_factors_batch, batch_update_neutralized_values
+    HAS_OPTIMIZATIONS = True
+except ImportError:
+    HAS_OPTIMIZATIONS = False
+
+try:
     import duckdb
     HAS_DUCKDB = True
 except ImportError:
     HAS_DUCKDB = False
     logger.warning("duckdb 未安装，数据存储功能不可用。pip install duckdb")
+
+
+class FreshnessStatus(Enum):
+    """数据新鲜度状态枚举。"""
+    FRESH = "fresh"        # 在允许滞后内
+    STALE = "stale"        # 超过允许滞后但 <= 2x
+    OUTDATED = "outdated"  # 严重滞后（> 2x）或无数据
+
+
+# 表 freshness 规则: table -> (use_trading_days, allowed_lag_days)
+# use_trading_days=True 时按交易日计算滞后，False 时按自然日
+FRESHNESS_RULES = {
+    "stock_daily": (True, 1),
+    "index_daily": (True, 1),
+    "factors":     (True, 1),
+    "events":      (False, 1),
+    "financials":  (False, 90),
+}
 
 
 class DataStorage:
@@ -260,6 +285,14 @@ class DataStorage:
         # 创建 schema
         for schema in ["raw", "cleaned", "research", "published"]:
             self.conn.execute(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+
+        # Apply performance optimizations
+        if HAS_OPTIMIZATIONS:
+            try:
+                apply_optimizations(self.conn)
+                logger.info("DuckDB optimizations applied")
+            except Exception as e:
+                logger.warning(f"Optimizations failed: {e}")
 
         # raw.stock_daily — 原始行情副本
         self.conn.execute("""
@@ -559,6 +592,190 @@ class DataStorage:
         return df
 
     # ============================================================
+    # 增量更新支持
+    # ============================================================
+
+    # 表的最新日期查询元数据: table -> (date_column, filter_column, schema_prefix)
+    _LAST_DATE_META = {
+        "stock_daily": ("date", "ticker", ""),
+        "index_daily": ("date", "index_code", ""),
+        "factors": ("date", "ticker", ""),
+        "events": ("timestamp", None, ""),
+        "financials": ("report_date", "ticker", "research."),
+    }
+
+    def get_last_date(self, table: str, ticker: str = None) -> Optional[date]:
+        """
+        获取某表的最新日期。
+
+        Args:
+            table: 表名 (stock_daily / index_daily / factors / events / financials)
+            ticker: 可选，按 ticker 或 index_code 过滤
+
+        Returns:
+            最新日期，无数据时返回 None
+        """
+        if table not in self._LAST_DATE_META:
+            raise ValueError(f"不支持的表: {table}，支持: {list(self._LAST_DATE_META.keys())}")
+
+        date_col, filter_col, schema_prefix = self._LAST_DATE_META[table]
+        full_table = f"{schema_prefix}{table}"
+
+        if table == "events":
+            query = f"SELECT MAX({date_col}::DATE) FROM {full_table}"
+        else:
+            query = f"SELECT MAX({date_col}) FROM {full_table}"
+
+        params = []
+        if ticker and filter_col:
+            query += f" WHERE {filter_col} = ?"
+            params.append(ticker)
+
+        result = self.conn.execute(query, params).fetchone()
+        if result and result[0]:
+            d = result[0]
+            if isinstance(d, date) and not isinstance(d, datetime):
+                return d
+            if isinstance(d, datetime):
+                return d.date()
+            if isinstance(d, str):
+                return date.fromisoformat(d[:10])
+            return d
+        return None
+
+    def get_freshness(self, table: str) -> dict:
+        """
+        获取某表的数据新鲜度状态。
+
+        Args:
+            table: 表名 (stock_daily / index_daily / factors / events / financials)
+
+        Returns:
+            {
+                "last_date": date | None,
+                "staleness_days": int | None,
+                "status": "fresh" | "stale" | "outdated",
+                "allowed_lag": int,
+                "use_trading_days": bool,
+            }
+        """
+        if table not in FRESHNESS_RULES:
+            raise ValueError(f"无 freshness 规则的表: {table}，支持: {list(FRESHNESS_RULES.keys())}")
+
+        use_trading_days, allowed_lag = FRESHNESS_RULES[table]
+        last = self.get_last_date(table)
+
+        if last is None:
+            return {
+                "last_date": None,
+                "staleness_days": None,
+                "status": FreshnessStatus.OUTDATED.value,
+                "allowed_lag": allowed_lag,
+                "use_trading_days": use_trading_days,
+            }
+
+        if use_trading_days:
+            staleness = self._trading_day_lag(last)
+        else:
+            staleness = (date.today() - last).days
+
+        if staleness <= allowed_lag:
+            status = FreshnessStatus.FRESH
+        elif staleness <= allowed_lag * 2:
+            status = FreshnessStatus.STALE
+        else:
+            status = FreshnessStatus.OUTDATED
+
+        return {
+            "last_date": last,
+            "staleness_days": staleness,
+            "status": status.value,
+            "allowed_lag": allowed_lag,
+            "use_trading_days": use_trading_days,
+        }
+
+    def _trading_day_lag(self, last_date: date) -> int:
+        """计算从 last_date 到今天经过的交易日数（不含 last_date）。"""
+        try:
+            from data.trading_calendar import TradingCalendar
+            cal = TradingCalendar(storage=self)
+            today = date.today()
+            reference = cal.last_trading_day(today) or today
+            if reference <= last_date:
+                return 0
+            days = cal.trading_days_between(
+                last_date + timedelta(days=1), reference
+            )
+            return len(days)
+        except Exception as e:
+            logger.debug(f"交易日历不可用，回退到自然日: {e}")
+            return (date.today() - last_date).days
+
+    def append_stock_daily(self, ticker: str, df: pd.DataFrame):
+        """
+        追加个股日线数据（不删除已有数据，用于增量更新）。
+
+        调用方需确保 df 中的 date 均大于现有 max(date)，否则触发主键冲突。
+        """
+        if df.empty:
+            return
+
+        df = df.copy()
+        df["ticker"] = ticker
+
+        for col in ["open", "high", "low", "close", "volume", "amount", "pct_change", "turnover"]:
+            if col not in df.columns:
+                df[col] = None
+
+        if df.index.name == "date":
+            df = df.reset_index()
+
+        df["date"] = pd.to_datetime(df["date"]).dt.date
+
+        self.conn.execute("""
+            INSERT INTO stock_daily
+            SELECT ticker, date, open, high, low, close, volume, amount, pct_change, turnover
+            FROM df
+        """)
+        self.conn.execute("""
+            INSERT INTO raw.stock_daily
+            SELECT ticker, date, open, high, low, close, volume, amount, pct_change, turnover, CURRENT_TIMESTAMP
+            FROM df
+        """)
+
+    def append_index_daily(self, index_code: str, df: pd.DataFrame):
+        """
+        追加指数日线数据（不删除已有数据，用于增量更新）。
+
+        调用方需确保 df 中的 date 均大于现有 max(date)，否则触发主键冲突。
+        """
+        if df.empty:
+            return
+
+        df = df.copy()
+        df["index_code"] = index_code
+
+        if df.index.name == "date":
+            df = df.reset_index()
+
+        df["date"] = pd.to_datetime(df["date"]).dt.date
+
+        for col in ["open", "high", "low", "close", "volume"]:
+            if col not in df.columns:
+                df[col] = None
+
+        self.conn.execute("""
+            INSERT INTO index_daily
+            SELECT index_code, date, open, high, low, close, volume
+            FROM df
+        """)
+        self.conn.execute("""
+            INSERT INTO raw.index_daily
+            SELECT index_code, date, open, high, low, close, volume, CURRENT_TIMESTAMP
+            FROM df
+        """)
+
+    # ============================================================
     # 基本面数据
     # ============================================================
 
@@ -764,31 +981,49 @@ class DataStorage:
             FROM df
         """)
 
-    def save_neutralized_values(self, df: pd.DataFrame):
+    def save_factors_batch(self, ticker: str, factors_df: pd.DataFrame):
         """
-        批量更新 research.factors 表的 neutralized_value。
+        Batch save multiple factors for a ticker (performance optimized).
 
         Args:
-            df: 包含 ticker, date, factor_name, neutralized_value 列的 DataFrame
+            ticker: Stock ticker symbol
+            factors_df: DataFrame with factor columns, index is date
         """
-        if df.empty:
-            return
-        df = df.copy()
-        df["date"] = pd.to_datetime(df["date"]).dt.date
-        df["neutralized_value"] = df["neutralized_value"].astype("float64")
+        if HAS_OPTIMIZATIONS:
+            save_factors_batch(self.conn, ticker, factors_df)
+        else:
+            factor_names = [c for c in factors_df.columns if c not in ["open", "high", "low", "close", "volume", "amount", "pct_change", "turnover", "revenue", "net_profit", "roe", "eps"]]
+            for col in factor_names:
+                series = factors_df[col].dropna()
+                if not series.empty:
+                    self.save_factors(ticker, col, series)
 
-        # 逐行 UPDATE (DuckDB 不直接支持 JOIN UPDATE)
-        for _, row in df.iterrows():
-            self.conn.execute("""
-                UPDATE research.factors
-                SET neutralized_value = ?
-                WHERE ticker = ? AND date = ? AND factor_name = ?
-            """, [
-                None if pd.isna(row["neutralized_value"]) else float(row["neutralized_value"]),
-                row["ticker"],
-                row["date"],
-                row["factor_name"],
-            ])
+    def save_neutralized_values(self, df: pd.DataFrame):
+        """
+        Batch update neutralized_value in research.factors (performance optimized).
+
+        Args:
+            df: DataFrame containing ticker, date, factor_name, neutralized_value
+        """
+        if HAS_OPTIMIZATIONS:
+            batch_update_neutralized_values(self.conn, df)
+        else:
+            if df.empty:
+                return
+            df = df.copy()
+            df["date"] = pd.to_datetime(df["date"]).dt.date
+            df["neutralized_value"] = df["neutralized_value"].astype("float64")
+            for _, row in df.iterrows():
+                self.conn.execute("""
+                    UPDATE research.factors
+                    SET neutralized_value = ?
+                    WHERE ticker = ? AND date = ? AND factor_name = ?
+                """, [
+                    None if pd.isna(row["neutralized_value"]) else float(row["neutralized_value"]),
+                    row["ticker"],
+                    row["date"],
+                    row["factor_name"],
+                ])
 
     def load_factors(self, ticker: str = None,
                      factor_name: str = None,

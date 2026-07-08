@@ -2,9 +2,10 @@
 数据更新脚本
 
 用法：
-    python -m scripts.update_data                    # 更新沪深300
+    python -m scripts.update_data                    # 更新沪深300（全量）
     python -m scripts.update_data --universe csi500  # 更新中证500
     python -m scripts.update_data --tickers 600519,300750  # 更新指定股票
+    python -m scripts.update_data --incremental      # 增量更新（只拉缺失日期）
 """
 import sys
 import argparse
@@ -19,6 +20,111 @@ from data.storage import DataStorage
 from data.cleaner import DataCleaner
 
 from loguru import logger
+
+
+def update_market_data(target_date: date = None,
+                       tickers: list[str] = None,
+                       incremental: bool = True,
+                       update_index: bool = True) -> dict:
+    """
+    独立的市场数据更新任务（不含因子/研究/日报）。
+
+    这是 scheduler 和 daily_research 共享的纯数据更新入口。
+    将数据更新与因子计算/新闻采集/日报生成解耦。
+
+    Args:
+        target_date: 目标日期（默认今天）
+        tickers: 股票列表（None 则使用默认列表）
+        incremental: True 时只拉 max(date)+1 到 target_date 的缺失数据；
+                     False 时全量重拉并替换
+        update_index: 是否更新指数数据
+
+    Returns:
+        {"tickers_updated": int, "rows_added": int, "skipped": list[str],
+         "index_updated": bool}
+    """
+    target_date = target_date or date.today()
+    target_str = target_date.isoformat()
+    storage = DataStorage()
+
+    result = {
+        "tickers_updated": 0,
+        "rows_added": 0,
+        "skipped": [],
+        "index_updated": False,
+    }
+
+    # 默认股票列表
+    if tickers is None:
+        try:
+            tickers = DataProvider.get_csi300_components()[:20]
+            logger.info(f"沪深300成分股(前20): {len(tickers)} 只")
+        except Exception:
+            tickers = ["000001", "000002", "600519", "300750", "002475"]
+            logger.warning(f"使用默认股票列表: {tickers}")
+
+    # ---- 指数更新 ----
+    if update_index:
+        for index_code, index_name in [("000300", "沪深300"), ("000905", "中证500")]:
+            try:
+                if incremental:
+                    last = storage.get_last_date("index_daily", ticker=index_code)
+                    if last is not None and last >= target_date:
+                        logger.debug(f"  {index_name} 已是最新 ({last})，跳过")
+                        continue
+                    start = (last + timedelta(days=1)).isoformat() if last else "2020-01-01"
+                else:
+                    start = "2020-01-01"
+
+                df = DataProvider.get_index_daily(index_code, start, target_str)
+                if not df.empty:
+                    if incremental and last is not None:
+                        storage.append_index_daily(index_code, df)
+                    else:
+                        storage.save_index_daily(index_code, df)
+                    logger.success(f"  {index_name}: +{len(df)} 条 ({start} ~ {target_str})")
+                    result["index_updated"] = True
+            except Exception as e:
+                logger.warning(f"  {index_name} 更新失败: {e}")
+
+    # ---- 个股更新 ----
+    for i, ticker in enumerate(tickers):
+        if (i + 1) % 10 == 0:
+            logger.info(f"  进度: {i+1}/{len(tickers)}")
+
+        try:
+            if incremental:
+                last = storage.get_last_date("stock_daily", ticker=ticker)
+                if last is not None and last >= target_date:
+                    result["skipped"].append(ticker)
+                    continue
+                start = (last + timedelta(days=1)).isoformat() if last else "2020-01-01"
+            else:
+                start = "2020-01-01"
+
+            df = DataProvider.get_stock_daily(ticker, start, target_str)
+            if df.empty:
+                result["skipped"].append(ticker)
+                continue
+
+            df = DataCleaner.clean_ohlcv(df)
+
+            if incremental and last is not None:
+                storage.append_stock_daily(ticker, df)
+            else:
+                storage.save_stock_daily(ticker, df)
+
+            result["tickers_updated"] += 1
+            result["rows_added"] += len(df)
+        except Exception as e:
+            logger.warning(f"  {ticker} 更新失败: {e}")
+            result["skipped"].append(ticker)
+
+        time.sleep(0.3)  # 防限流
+
+    logger.info(f"数据更新完成: 更新 {result['tickers_updated']} 只, "
+                f"新增 {result['rows_added']} 行, 跳过 {len(result['skipped'])} 只")
+    return result
 
 
 def update_data(universe: str = "csi300",
@@ -109,7 +215,13 @@ if __name__ == "__main__":
     parser.add_argument("--tickers", default=None, help="指定股票 (逗号分隔)")
     parser.add_argument("--start", default="2020-01-01", help="开始日期")
     parser.add_argument("--end", default=None, help="结束日期")
+    parser.add_argument("--incremental", action="store_true",
+                       help="增量更新（只拉 max(date)+1 到今天的缺失数据）")
     args = parser.parse_args()
 
     tickers = [t.strip().zfill(6) for t in args.tickers.split(",")] if args.tickers else None
-    update_data(args.universe, tickers, args.start, args.end)
+
+    if args.incremental:
+        update_market_data(tickers=tickers, incremental=True)
+    else:
+        update_data(args.universe, tickers, args.start, args.end)

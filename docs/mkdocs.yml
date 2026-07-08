@@ -1,0 +1,110 @@
+site_name: QuantAgent Documentation
+site_url: https://quantagent.readthedocs.io/
+site_description: An AI-powered quantitative trading research system
+site_author: QuantAgent Team
+
+repo_url: https://github.com/your-username/quantagent
+repo_name: quantagent
+
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+    - toc.integrate
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - footnotes
+  - meta
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.details
+  - toc:
+      permalink: true
+
+nav:
+  - 首页: README.md
+  - 快速上手:
+    - 安装与运行: getting-started/quickstart.md
+  - 开发指南:
+    - 系统架构: development/architecture.md
+    - 因子引擎开发: development/factor_development.md
+    - 策略插件开发: development/strategy_development.md
+  - 操作手册:
+    - 服务器运行: operations/server_runbook.md
+    - 定时调度: operations/scheduler.md
+    - 监控告警: operations/monitoring.md
+    - 风控系统: operations/risk_management.md
+    - 灾备方案: operations/disaster_recovery.md
+  - 研究指南:
+    - 回测最佳实践: research/backtesting.md
+    - 数据契约: research/data_schema.md
+    - 验证闭环: research/verification_loop.md
+  - 参考手册:
+    - CLI 命令参考: reference/cli_reference.md
+    - 配置参数: reference/configuration.md
+    - 参考项目: reference/reference-projects.md
+  - 项目管理:
+    - 项目状态: project/project-status.md
+    - 路线图: project/roadmap.md
+    - 变更记录: project/changelog.md
+    - 安全说明: project/security.md
+    - Good First Issues: project/good-first-issues.md
+  - MCP 工具:
+    - 能力清单: mcp-capabilities.md
+  - 故障排除:
+    - 常见问题: runbook/troubleshooting.md
+  - 交易方法论:
+    - 实体策略: wiki/entities/
+    - 场景应对: wiki/scenarios/
+    - 策略来源: wiki/sources/
+    - 综合比较: wiki/synthesis/
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: true
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_object_full_path: false
+            show_category_heading: true
+            show_signature_annotations: true
+            show_bases: true
+            show_submodules: false
+  - markdown-exec
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/your-username/quantagent
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/quantagent/
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js

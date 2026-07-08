@@ -1,0 +1,18 @@
+[Unit]
+Description=QuantAgent Scheduled Data Update
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/edalab/Desktop/cme_code/quant-system/QuantAgent
+ExecStart=/home/edalab/Desktop/cme_code/quant-system/QuantAgent/.venv/bin/python -m scripts.run_scheduled_update
+TimeoutStartSec=1800
+StandardOutput=journal
+StandardError=journal
+
+# 失败不自动重启（timer 下次会再触发）
+Restart=no
+
+[Install]
+WantedBy=default.target

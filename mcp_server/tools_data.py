@@ -10,6 +10,7 @@ import pandas as pd
 
 from data.storage import DataStorage
 from research.factors import FactorEngine
+from mcp_server.registry import register_mcp_tool
 
 
 def _resolve_ticker(ticker: str) -> str:
@@ -39,6 +40,12 @@ def _load_or_fetch(ticker: str, days: int = 365) -> pd.DataFrame:
     return pd.DataFrame()
 
 
+@register_mcp_tool(
+    name="get_quote",
+    description="获取指定股票的最新行情数据。用于市场快速检查",
+    read_only=True,
+    skill="market-quick-check",
+)
 def get_quote(ticker: str) -> str:
     """获取指定股票的最新行情数据（自动从数据源拉取）"""
     try:
@@ -64,6 +71,12 @@ def get_quote(ticker: str) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="get_history",
+    description="获取股票历史行情数据。用于行业选股分析",
+    read_only=True,
+    skill="sector-screening",
+)
 def get_history(ticker: str, days: int = 60) -> str:
     """获取股票历史行情数据（自动从数据源拉取）"""
     try:
@@ -88,6 +101,12 @@ def get_history(ticker: str, days: int = 60) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="get_factors",
+    description="获取已注册的因子列表或指定因子的数值。用于因子研究",
+    read_only=True,
+    skill="factor-research",
+)
 def get_factors(ticker: str = "", factor_name: str = "") -> str:
     """获取已注册的因子列表或指定因子的数值"""
     try:
@@ -134,6 +153,12 @@ def get_factors(ticker: str = "", factor_name: str = "") -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="get_index_data",
+    description="获取指数行情数据（默认沪深300）。用于市场快速检查和行业选股",
+    read_only=True,
+    skill="market-quick-check",
+)
 def get_index_data(index_code: str = "000300", days: int = 30) -> str:
     """获取指数行情数据（默认沪深300）"""
     try:
@@ -155,6 +180,12 @@ def get_index_data(index_code: str = "000300", days: int = 30) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="get_universe",
+    description="获取系统跟踪的股票列表。用于市场快速检查",
+    read_only=True,
+    skill="market-quick-check",
+)
 def get_universe() -> str:
     """获取系统跟踪的股票列表"""
     try:
@@ -172,6 +203,12 @@ def get_universe() -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="get_market_overview",
+    description="获取市场概况（指数行情 + 涨跌统计）。用于行业选股和每日研究",
+    read_only=True,
+    skill="sector-screening",
+)
 def get_market_overview() -> str:
     """获取市场概况（指数最新数据 + 涨跌统计）"""
     try:
@@ -192,6 +229,12 @@ def get_market_overview() -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="search_tickers",
+    description="搜索股票代码。用于行业选股备选",
+    read_only=True,
+    skill="sector-screening",
+)
 def search_tickers(query: str) -> str:
     """搜索股票代码或名称（支持中文名称模糊搜索）"""
     try:
@@ -237,6 +280,12 @@ def search_tickers(query: str) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="get_calendar",
+    description="获取交易日历。用于市场快速检查",
+    read_only=True,
+    skill="market-quick-check",
+)
 def get_calendar(year: int = 0) -> str:
     """获取交易日历"""
     try:
@@ -256,6 +305,12 @@ def get_calendar(year: int = 0) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="run_factor_evaluation",
+    description="运行因子评估（IC/ICIR/评分）。用于因子研究",
+    read_only=True,
+    skill="factor-research",
+)
 def run_factor_evaluation(ticker: str = "600519", factor_name: str = "momentum_20d") -> str:
     """运行因子评估（IC/ICIR/分组收益）"""
     try:
@@ -301,11 +356,44 @@ def run_factor_evaluation(ticker: str = "600519", factor_name: str = "momentum_2
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
-def update_data(universe: str = "csi300", start_date: str = "") -> str:
+@register_mcp_tool(
+    name="update_data",
+    description="更新行情数据（从 AKShare/baostock 拉取最新数据并写入数据库）。注意：写操作，耗时 15-30 分钟。支持 dry_run 参数预览。用于每日研究",
+    read_only=False,
+    skill="daily-workflow",
+)
+def update_data(universe: str = "csi300", start_date: str = "", dry_run: bool = False) -> str:
     """更新行情数据。注意：此操作会从数据源拉取数据并写入数据库，耗时 15-30 分钟。"""
     from scripts.update_data import update_data as _update_data
     import io
     from contextlib import redirect_stdout
+
+    if dry_run:
+        start = start_date or "20200101"
+        universe_desc = {
+            "csi300": "沪深300成分股（约300只）",
+            "csi500": "中证500成分股（约500只）",
+            "all": "全市场（约5000只，耗时较长）",
+        }
+        return json.dumps({
+        "success": True,
+        "message": "dry-run 模式：数据更新预览",
+        "dry_run": True,
+        "details": {
+            "universe": universe,
+            "universe_desc": universe_desc.get(universe, universe),
+            "start_date": start,
+            "steps": ["获取股票列表", "逐只拉取日线数据", "清洗数据", "写入数据库"],
+            "estimated_time": {"csi300": "15-20 分钟", "csi500": "20-30 分钟", "all": "60-120 分钟"}.get(universe, "30-60 分钟"),
+            "notes": "dry-run 模式仅返回操作预览，不执行实际写操作",
+        },
+        "skill_guide": {
+            "skill": "daily-workflow",
+            "step": "步骤1-预览",
+            "next_action": f"update_data(universe='{universe}', dry_run=False)",
+            "description": "预览完成，确认参数正确后执行实际更新",
+        },
+    }, ensure_ascii=False)
 
     start = start_date or "20200101"
     buf = io.StringIO()
@@ -321,6 +409,13 @@ def update_data(universe: str = "csi300", start_date: str = "") -> str:
         "success": success,
         "message": "数据更新完成" if success else f"数据更新失败: {error}",
         "stdout": stdout[:2000],
+        "dry_run": False,
+        "skill_guide": {
+            "skill": "daily-workflow",
+            "step": "步骤1-完成",
+            "next_action": "run_daily_research()",
+            "description": "数据更新完成，下一步运行每日研究",
+        },
     }, ensure_ascii=False)
 
 
@@ -328,6 +423,12 @@ def update_data(universe: str = "csi300", start_date: str = "") -> str:
 # 行业 / 概念板块工具 (P1)
 # ============================================================
 
+@register_mcp_tool(
+    name="get_sector_list",
+    description="获取行业板块或概念板块列表（申万行业 / 东方财富概念板块）。用于行业选股",
+    read_only=True,
+    skill="sector-screening",
+)
 def get_sector_list(sector_type: str = "concept") -> str:
     """
     获取行业板块或概念板块列表
@@ -350,6 +451,12 @@ def get_sector_list(sector_type: str = "concept") -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="get_sector_stocks",
+    description="获取指定板块的成分股列表，如 get_sector_stocks('半导体') 返回半导体概念股。用于行业选股",
+    read_only=True,
+    skill="sector-screening",
+)
 def get_sector_stocks(sector_name: str, sector_type: str = "concept") -> str:
     """
     获取指定板块的成分股列表
@@ -389,11 +496,23 @@ def get_sector_stocks(sector_name: str, sector_type: str = "concept") -> str:
             "sector_type": sector_type,
             "count": len(stocks),
             "stocks": stocks,
+            "skill_guide": {
+                "skill": "sector-screening",
+                "step": "步骤1-完成",
+                "next_action": f"get_sector_index('{sector_name}', sector_type='{sector_type}', days=120)",
+                "description": "获取板块成分股成功，下一步构建板块指数",
+            },
         }, ensure_ascii=False)
     except Exception as e:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="get_sector_index",
+    description="构建并返回板块等权指数日线数据，从所有成分股日线构建。首次调用耗时 30s-2min。用于行业选股",
+    read_only=True,
+    skill="sector-screening",
+)
 def get_sector_index(sector_name: str, sector_type: str = "concept", days: int = 60) -> str:
     """
     构建并返回板块等权指数日线数据
@@ -437,17 +556,42 @@ def get_sector_index(sector_name: str, sector_type: str = "concept", days: int =
             "sector_type": sector_type,
             "count": len(records),
             "data": records,
+            "skill_guide": {
+                "skill": "sector-screening",
+                "step": "步骤2-完成",
+                "next_action": f"get_history(ticker, days={days})",
+                "description": "构建板块指数成功，下一步逐股分析成分股",
+            },
         }, ensure_ascii=False)
     except Exception as e:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
-def run_daily_research(target_date: str = "") -> str:
+@register_mcp_tool(
+    name="run_daily_research",
+    description="运行每日研究流程（数据更新→因子计算→新闻采集→日报生成）。注意：写操作，耗时 5-15 分钟。支持 dry_run 参数预览。用于每日研究",
+    read_only=False,
+    skill="daily-workflow",
+)
+def run_daily_research(target_date: str = "", dry_run: bool = False) -> str:
     """运行每日研究流程。注意：此操作会更新数据、计算因子、采集新闻、生成日报，耗时 5-15 分钟。"""
     from scripts.daily_research import run_daily_research as _run_dr
     from datetime import date
     import io
     from contextlib import redirect_stdout
+
+    if dry_run:
+        return json.dumps({
+            "success": True,
+            "message": "dry-run 模式：每日研究流程模拟运行",
+            "dry_run": True,
+            "details": {
+                "target_date": target_date or str(date.today()),
+                "steps": ["数据更新", "因子计算", "新闻采集", "日报生成"],
+                "estimated_time": "5-15 分钟",
+                "notes": "dry-run 模式仅返回操作预览，不执行实际写操作",
+            },
+        }, ensure_ascii=False)
 
     target = date.fromisoformat(target_date) if target_date else date.today()
     buf = io.StringIO()
@@ -463,4 +607,270 @@ def run_daily_research(target_date: str = "") -> str:
         "success": success,
         "message": "每日研究流程完成" if success else f"运行失败: {error}",
         "stdout": stdout[:2000],
+        "dry_run": False,
     }, ensure_ascii=False)
+
+
+# ============================================================
+# 财务数据工具 (P3.6)
+# ============================================================
+
+@register_mcp_tool(
+    name="get_financials",
+    description="获取个股财务数据（利润表、资产负债表、现金流量表）。用于因子研究和基本面分析",
+    read_only=True,
+    skill="factor-research",
+)
+def get_financials(ticker: str, report_type: str = "all") -> str:
+    """
+    获取个股财务数据（利润表、资产负债表、现金流量表）
+
+    Args:
+        ticker: 股票代码
+        report_type: "all"(全部, 默认) / "profit"(利润表) / "balance"(资产负债表) / "cash"(现金流量表)
+
+    Returns:
+        JSON 格式的财务数据列表
+    """
+    try:
+        ticker = _resolve_ticker(ticker)
+        storage = DataStorage()
+        df = storage.load_financials(ticker)
+
+        if df.empty:
+            return json.dumps({
+                "error": f"无财务数据: {ticker}，请先运行 update_financials 更新",
+                "ticker": ticker,
+                "data": [],
+            }, ensure_ascii=False)
+
+        records = []
+        for _, row in df.iterrows():
+            record = {
+                "report_date": str(row.get("report_date", "")),
+                "report_type": row.get("report_type", ""),
+                "revenue": row.get("revenue"),
+                "net_profit": row.get("net_profit"),
+                "roe": row.get("roe"),
+                "total_assets": row.get("total_assets"),
+                "equity": row.get("equity"),
+                "eps": row.get("eps"),
+            }
+            if report_type == "all" or record["report_type"] == report_type:
+                records.append(record)
+
+        return json.dumps({
+            "ticker": ticker,
+            "count": len(records),
+            "data": records,
+        }, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+
+
+@register_mcp_tool(
+    name="get_latest_financials",
+    description="获取个股最新财务数据摘要（营收、净利润、ROE、EPS等）。用于快速基本面分析",
+    read_only=True,
+    skill="factor-research",
+)
+def get_latest_financials(ticker: str) -> str:
+    """获取个股最新财务数据摘要"""
+    try:
+        ticker = _resolve_ticker(ticker)
+        storage = DataStorage()
+        data = storage.get_latest_financials(ticker)
+
+        if not data:
+            return json.dumps({
+                "error": f"无最新财务数据: {ticker}",
+                "ticker": ticker,
+            }, ensure_ascii=False)
+
+        return json.dumps({
+            "ticker": ticker,
+            "report_date": data.get("report_date", ""),
+            "report_type": data.get("report_type", ""),
+            "revenue": data.get("revenue"),
+            "net_profit": data.get("net_profit"),
+            "roe": data.get("roe"),
+            "total_assets": data.get("total_assets"),
+            "equity": data.get("equity"),
+            "eps": data.get("eps"),
+        }, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+
+
+@register_mcp_tool(
+    name="update_financials",
+    description="更新财务数据（从 baostock/AKShare 拉取财务报表）。注意：写操作。支持 dry_run 参数预览。用于因子研究",
+    read_only=False,
+    skill="factor-research",
+)
+def update_financials(ticker: str = "", dry_run: bool = False) -> str:
+    """
+    更新财务数据（从数据源拉取并写入数据库）
+
+    Args:
+        ticker: 股票代码，为空则更新全市场（耗时较长）
+        dry_run: 是否仅预览不执行（默认 False）
+
+    Returns:
+        JSON 格式的更新结果
+    """
+    try:
+        if dry_run:
+            return json.dumps({
+                "success": True,
+                "message": "dry-run 模式：财务数据更新预览",
+                "dry_run": True,
+                "details": {
+                    "ticker": ticker or "全市场",
+                    "steps": ["从 baostock/AKShare 拉取财务报表", "清洗数据", "写入 research.financials"],
+                    "estimated_time": "30-60 分钟（全市场）",
+                    "notes": "dry-run 模式仅返回操作预览，不执行实际写操作",
+                },
+            }, ensure_ascii=False)
+
+        from data.provider import DataProvider
+
+        if ticker:
+            ticker = _resolve_ticker(ticker)
+            reports = DataProvider.get_stock_financial_reports(ticker)
+            if not reports:
+                return json.dumps({
+                    "success": False,
+                    "message": f"获取 {ticker} 财务数据失败",
+                    "ticker": ticker,
+                }, ensure_ascii=False)
+
+            storage = DataStorage()
+            count = 0
+            for report_type, df in reports.items():
+                if not df.empty:
+                    df["report_type"] = report_type
+                    storage.save_financials(ticker, df)
+                    count += len(df)
+
+            return json.dumps({
+                "success": True,
+                "message": f"财务数据更新完成",
+                "ticker": ticker,
+                "records_added": count,
+                "dry_run": False,
+            }, ensure_ascii=False)
+        else:
+            return json.dumps({
+                "success": False,
+                "message": "全市场财务数据更新暂未实现，请指定 ticker 参数",
+                "dry_run": False,
+            }, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({
+                "success": False,
+                "message": f"财务数据更新失败: {e}",
+                "dry_run": False,
+            }, ensure_ascii=False)
+
+
+# ============================================================
+# 数据新鲜度工具 (Phase 4 B1.2)
+# ============================================================
+
+@register_mcp_tool(
+    name="check_data_freshness",
+    description="检查各数据表的新鲜度状态（stock_daily/index_daily/factors/events/financials）。用于每日研究前确认数据是否过期",
+    read_only=True,
+    skill="daily-workflow",
+)
+def check_data_freshness() -> str:
+    """
+    检查各数据表的新鲜度。
+
+    返回每张表的 last_date、staleness_days、status(fresh/stale/outdated)、allowed_lag。
+    status=FreshnessStatus: fresh(在允许滞后内) / stale(超过但<=2x) / outdated(严重滞后或无数据)。
+    """
+    try:
+        from data.storage import FRESHNESS_RULES
+        storage = DataStorage()
+
+        tables = ["stock_daily", "index_daily", "factors", "events", "financials"]
+        result = {}
+        worst_status = "fresh"
+        priority = {"fresh": 0, "stale": 1, "outdated": 2}
+
+        for table in tables:
+            try:
+                info = storage.get_freshness(table)
+                result[table] = {
+                    "last_date": str(info["last_date"]) if info["last_date"] else None,
+                    "staleness_days": info["staleness_days"],
+                    "status": info["status"],
+                    "allowed_lag": info["allowed_lag"],
+                    "use_trading_days": info["use_trading_days"],
+                }
+                if priority.get(info["status"], 1) > priority.get(worst_status, 1):
+                    worst_status = info["status"]
+            except Exception as e:
+                result[table] = {"error": str(e)}
+                if priority.get("stale", 1) > priority.get(worst_status, 1):
+                    worst_status = "stale"
+
+        storage.close()
+        result["overall"] = worst_status
+        return json.dumps(result, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+
+
+@register_mcp_tool(
+    name="update_data_incremental",
+    description="增量更新行情数据（只拉取 max(date)+1 到今天的缺失数据，非全量重拉）。注意：写操作，比全量更新快很多。用于每日研究",
+    read_only=False,
+    skill="daily-workflow",
+)
+def update_data_incremental(tickers: str = "", dry_run: bool = False) -> str:
+    """
+    增量更新行情数据。
+
+    只拉取每只股票 max(date)+1 到今天的缺失数据，避免全量重拉。
+    无现有数据时从 2020-01-01 全量拉取。
+
+    Args:
+        tickers: 指定股票代码（逗号分隔），为空则使用默认列表
+        dry_run: 是否仅预览不执行（默认 False）
+    """
+    try:
+        if dry_run:
+            return json.dumps({
+                "success": True,
+                "message": "dry-run 模式：增量更新预览",
+                "dry_run": True,
+                "details": {
+                    "tickers": tickers or "默认列表（沪深300前20）",
+                    "mode": "incremental",
+                    "description": "只拉取 max(date)+1 到今天的缺失数据",
+                },
+            }, ensure_ascii=False)
+
+        from scripts.update_data import update_market_data
+
+        ticker_list = [t.strip().zfill(6) for t in tickers.split(",")] if tickers else None
+        result = update_market_data(tickers=ticker_list, incremental=True)
+
+        return json.dumps({
+            "success": True,
+            "message": "增量更新完成",
+            "tickers_updated": result["tickers_updated"],
+            "rows_added": result["rows_added"],
+            "skipped": len(result["skipped"]),
+            "index_updated": result["index_updated"],
+            "dry_run": False,
+        }, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({
+            "success": False,
+            "message": f"增量更新失败: {e}",
+            "dry_run": False,
+        }, ensure_ascii=False)

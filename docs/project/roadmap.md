@@ -1,6 +1,6 @@
 # 未来计划
 
-> 生成日期：2026-07-03 | 最后更新：2026-07-06（Phase 2 计划更新）
+> 生成日期：2026-07-03 | 最后更新：2026-07-09（Phase 2/3 归档，Phase 4 计划新增）
 > 核心定位：**MCP Server** — 把量化研究能力暴露为工具供外部 Agent 调用
 
 ---
@@ -33,31 +33,18 @@
 
 ---
 
-## 二、当前执行阶段：Phase 2
+## 二、已完成阶段（已归档）
 
-> 详细计划见 [`docs/plan/phase-2-implementation-plan.md`](../plan/phase-2-implementation-plan.md)
+| 阶段 | 计划文档 | 状态 |
+|------|---------|------|
+| Phase 2 | [archive/phase-2-implementation-plan.md](../plan/archive/phase-2-implementation-plan.md) | ✅ 大部分完成（baostock、批量回测、MCP 写工具；scheduler 部分完成） |
+| Phase 3 | [archive/phase-3-improvement-plan.md](../plan/archive/phase-3-improvement-plan.md) | ✅ 大部分完成（Skills、MCP 自动发现、DuckDB 优化、I/O 优化、dry-run、因子参数化） |
 
-| # | 任务 | 预计耗时 | 说明 |
-|---|------|---------|------|
-| P2.1 | **baostock 稳定数据源** | 15min | 替换 AKShare 间歇性失败 |
-| P2.2 | **定时调度器跑通** | 2h | 日终自动研究流程 + 告警对接 SendChan |
-| P2.3 | **4 策略样本外回测验证** | 3-4h | 批量回测 + 结果入库，支持 --compare |
-| P2.4 | **MCP 写工具** | 2h | run_backtest / update_data / daily_research |
-| P2.5 | **Walk-Forward CLI** | 3h | 参数扫描命令行入口 + JSON 输出 |
-
-### 验收标准
-
-- [ ] P2.1: baostock 安装并验证通过
-- [ ] P2.2: scheduler --dry-run 输出正确，--run-now 完成一次流程
-- [ ] P2.2: 告警对接 SendChan 成功
-- [ ] P2.3: 4 策略批量回测脚本可用，结果写入 backtest_runs 表
-- [ ] P2.4: MCP run_backtest / update_data 工具可用
-- [ ] P2.5: walkforward CLI 命令可用，参数扫描输出有效
-- [ ] **整体**：健康检查 8 pass, 0 warn, 0 fail
+> 已完成的验收标准和数据质量改进计划也已归档至 `docs/plan/archive/`。
 
 ---
 
-## 三、后续阶段
+## 四、后续待办（非 Phase 4 范围）
 
 | # | 事项 | 说明 | 前置 |
 |---|------|------|------|
@@ -70,13 +57,73 @@
 
 ---
 
-## 四、当前建议优先级
+## 五、Phase 4：从"查询工具"到"会进化的研究平台"
+
+> 详细计划见 [`docs/plan/phase-4-improvement-plan.md`](../plan/phase-4-improvement-plan.md)（唯一 active plan）
+> 核心诊断：骨架搭好了但上半身没长出来——数据有了但分析不及时，日报有了但高阶报告缺失，回测跑了但经验不积累
+> 执行原则：基于现有代码准确改哪里，复用已有 API，不重造轮子
+
+### 5.1 执行顺序（P0 前置 → B1 → B2 → ADR → B4 → B3 条件触发）
 
 ```
-Phase 2（~10h）
-  ├── P2.1 baostock 安装      — 数据源稳定
-  ├── P2.2 scheduler 调度器    — 自动化
-  ├── P2.3 策略回测验证        — 可验证
-  ├── P2.4 MCP 写工具          — Agent 可操作
-  └── P2.5 Walk-Forward CLI    — 参数优化
+P0  前置能力（~6h）← 解锁 B1，否则 B1 是空中楼阁
+  ├── P0.1 拆分独立增量更新任务        2h
+  ├── P0.2 正式交易日历模块            2h
+  └── P0.3 storage 层 freshness API    2h
+
+B1  关键基础设施（🔴 ~9h）
+  ├── B1.1 Scheduler → systemd         3h   (依赖 P0.1 + P0.2)
+  ├── B1.2 数据新鲜度 MCP 工具         2h   (依赖 P0.3)
+  └── B1.3 周报/月报/季报生成          4h   (复用 KnowledgeBase)
+
+B2  打通闭环（🟡 ~7h）
+  ├── B2.1 回测→决策记忆自动写入       2h   (集成任务，复用 DecisionMemory)
+  ├── B2.2 因子共线性报告              2h
+  └── B2.3 假设自动生成                3h   (复用 HYPOTHESIS_TRANSITIONS)
+
+ADR 委员会去留决策（~1h）← 提前，不拖到最后
+  └── ADR-001 Agent 委员会：删或接 LLM  1h
+
+B4  清理加固（🔵 ~5h）
+  ├── B4.1 DuckDB 自动备份             1h
+  ├── B4.2 standard 模式参数扫描       1h   (walk-forward 已支持)
+  └── B4.3 执行 realism                2h
+
+B3  体验优化（🟠 条件触发，~6h）← 仅当 profiling 证明延迟影响使用时
+  ├── B3.1 慢工具缓存                  2h
+  ├── B3.2 便利查询工具                2h
+  └── B3.3 策略 leaderboard            2h
+```
+
+### 5.2 关键工程约束
+
+- **假设生命周期**：复用现有 `HYPOTHESIS_TRANSITIONS`（draft/active/verified/invalidated/obsolete/rejected），禁止另造第二套语义
+- **高阶报告存储**：复用 `KnowledgeBase.save_report(weekly/monthly/quarterly/annual)`，不另起 published schema
+- **决策记忆**：B2.1 是集成任务（在 `scripts/backtest.py` 调 `record_decision`），不是新系统建设
+- **回测主链路**：`research/backtest.py` + `scripts/backtest.py`（原计划写的 `strategy/backtest_engine.py` 不存在）
+- **每个任务**：必须有单元测试 + 集成测试 + 回滚路径
+
+### 5.3 验收里程碑
+
+| 里程碑 | 完成标志 | 预期效果 |
+|--------|---------|----------|
+| M0: P0 完成 | 独立增量更新 + 交易日历 + freshness API | B1 不再是空中楼阁 |
+| M1: B1 完成 | scheduler 自动跑 + 周报可查 + freshness MCP | 数据不再滞后，知识金字塔有上层 |
+| M2: B2 完成 | decision_memory > 50 + 假设 > 30 | 回测→决策→验证闭环打通 |
+| M3: ADR 完成 | 委员会去留落地，健康检查 0 skip | 系统无空壳模块 |
+| M4: B4 完成 | 备份 + 参数扫描 + realism | 系统加固完成 |
+| M5: B3（条件） | 仅在 profiling 证明需要时 | 交互式研究流畅 |
+
+---
+
+## 六、当前建议优先级
+
+```
+Phase 4（~28h）
+  P0  （6h）  独立增量更新 + 交易日历 + freshness API
+  B1  （🔴 9h）scheduler→systemd + 数据新鲜度 MCP + 周月报（复用 KnowledgeBase）
+  B2  （🟡 7h）回测闭环 + 因子共线性 + 假设自动生成（复用现有状态机）
+  ADR （1h）  Agent 委员会去留（提前决策）
+  B4  （🔵 5h）备份 + 参数扫描 + 执行 realism
+  B3  （🟠 6h）缓存 + 便利查询 + leaderboard（仅 profiling 证明需要时启动）
 ```

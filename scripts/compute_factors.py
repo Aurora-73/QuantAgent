@@ -27,7 +27,7 @@ from data.cleaner import DataCleaner
 from research.factors import FactorEngine
 
 
-def compute_factors_for_ticker(ticker: str) -> dict:
+def compute_factors_for_ticker(ticker: str, params: dict = None) -> dict:
     """计算单只股票的全部因子，返回统计信息"""
     storage = DataStorage()
     engine = FactorEngine()
@@ -61,16 +61,12 @@ def compute_factors_for_ticker(ticker: str) -> dict:
         except Exception:
             pass
 
-        df_with_factors = engine.compute_all(df)
+        df_with_factors = engine.compute_all(df, params=params)
 
         factor_names = engine.list_factors()
-        saved = 0
-        for col in df_with_factors.columns:
-            if col in factor_names:
-                series = df_with_factors[col].dropna()
-                if not series.empty:
-                    storage.save_factors(ticker, col, series)
-                    saved += 1
+        storage.save_factors_batch(ticker, df_with_factors)
+
+        saved = sum(1 for col in df_with_factors.columns if col in factor_names)
 
         return {
             "ticker": ticker,
@@ -91,7 +87,20 @@ def main():
     parser.add_argument("--workers", type=int, default=1, help="并行工作进程数 (默认 1)")
     parser.add_argument("--start-idx", type=int, default=0, help="起始股票索引 (断点续跑)")
     parser.add_argument("--end-idx", type=int, default=None, help="结束股票索引")
+    parser.add_argument("--params", default=None,
+                        help='因子参数覆盖，JSON格式 (如 \'{"momentum": {"lookback": 10}}\')')
     args = parser.parse_args()
+
+    # 解析因子参数
+    factor_params = {}
+    if args.params:
+        try:
+            import json
+            factor_params = json.loads(args.params)
+            logger.info(f"因子参数覆盖: {factor_params}")
+        except json.JSONDecodeError as e:
+            logger.error(f"--params JSON 解析失败: {e}")
+            sys.exit(1)
 
     # 获取股票列表
     if args.tickers:
@@ -112,13 +121,15 @@ def main():
     tickers = tickers[args.start_idx:args.end_idx]
     total = len(tickers)
     logger.info(f"因子批量计算: {total} 只股票 ({args.start_idx}..{args.end_idx or 'end'})")
+    if factor_params:
+        logger.info(f"因子参数: {factor_params}")
 
     start_time = time.time()
     results = []
 
     if args.workers > 1:
         with ProcessPoolExecutor(max_workers=args.workers) as executor:
-            futures = {executor.submit(compute_factors_for_ticker, t): t for t in tickers}
+            futures = {executor.submit(compute_factors_for_ticker, t, factor_params): t for t in tickers}
             for i, future in enumerate(as_completed(futures), 1):
                 r = future.result()
                 results.append(r)
@@ -128,7 +139,7 @@ def main():
     else:
         for i, ticker in enumerate(tickers, 1):
             logger.info(f"[{i}/{total}] {ticker}")
-            r = compute_factors_for_ticker(ticker)
+            r = compute_factors_for_ticker(ticker, factor_params)
             results.append(r)
             if i % 10 == 0 or i == total:
                 elapsed = time.time() - start_time

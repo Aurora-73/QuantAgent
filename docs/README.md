@@ -31,7 +31,8 @@ docs/
 │   ├── project-status.md        项目现状报告（含数据统计）
 │   ├── roadmap.md               路线图与优先级
 │   ├── changelog.md             变更记录
-│   └── security.md              安全说明
+│   ├── security.md              安全说明
+│   └── good-first-issues.md     适合新手的入门任务列表
 ├── reference/                   ← 参考手册
 │   ├── cli_reference.md         命令行接口参考
 │   ├── configuration.md         配置参数完整参考

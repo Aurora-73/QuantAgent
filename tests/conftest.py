@@ -101,3 +101,12 @@ def uptrend_df():
 def rangebound_df():
     """260 days of oscillating OHLCV data."""
     return make_rangebound_data()
+
+
+@pytest.fixture
+def test_df():
+    """通用测试 DataFrame（用于集成测试）"""
+    return make_uptrend_data(100)
+
+
+

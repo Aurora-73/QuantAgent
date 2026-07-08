@@ -1,0 +1,14 @@
+[Unit]
+Description=QuantAgent Daily Data Update Timer
+Requires=quantagent-scheduler.service
+
+[Timer]
+# 每个交易日 15:30 触发（非交易日由脚本内部 TradingCalendar 跳过）
+OnCalendar=Mon..Fri 15:30:00
+# 错过时补跑（如机器关机后开机）
+Persistent=true
+# 避免重复触发
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

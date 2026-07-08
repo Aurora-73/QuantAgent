@@ -14,12 +14,19 @@ from risk.stress_test import StressTestEngine
 from risk.attribution import BrinsonAttribution
 from risk.decay_detector import DecayDetector
 from strategies.registry import list_strategies as get_registered_strategies
+from mcp_server.registry import register_mcp_tool
 import strategies.momentum.strategy  # noqa: F401
 import strategies.event_driven.strategy  # noqa: F401
 import strategies.sentiment.strategy  # noqa: F401
 import strategies.regime_switch.strategy  # noqa: F401
 
 
+@register_mcp_tool(
+    name="run_stress_test",
+    description="运行压力测试（4个历史危机场景，含2015/2018/2020/2024）。用于风险评估",
+    read_only=True,
+    skill="risk-assessment",
+)
 def run_stress_test(ticker: str = "600519") -> str:
     """运行压力测试（4个历史危机场景）"""
     try:
@@ -47,11 +54,23 @@ def run_stress_test(ticker: str = "600519") -> str:
             "scenarios": results,
             "worst": report.worst_scenario,
             "all_survived": report.all_survived,
+            "skill_guide": {
+                "skill": "risk-assessment",
+                "step": "步骤1-完成",
+                "next_action": "run_brinson_attribution(portfolio_weights, benchmark_weights, portfolio_returns, benchmark_returns)",
+                "description": "压力测试完成，下一步运行收益归因",
+            },
         }, ensure_ascii=False)
     except Exception as e:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="run_brinson_attribution",
+    description="运行 Brinson 收益归因（配置效应 + 选股效应 + 交互效应）。用于风险评估",
+    read_only=True,
+    skill="risk-assessment",
+)
 def run_brinson_attribution(portfolio_weights: str, benchmark_weights: str,
                             portfolio_returns: str, benchmark_returns: str) -> str:
     """
@@ -92,6 +111,12 @@ def run_brinson_attribution(portfolio_weights: str, benchmark_weights: str,
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="run_decay_detection",
+    description="运行策略衰减检测（胜率/IC/衰减速度）。用于因子研究和风险评估",
+    read_only=True,
+    skill="factor-research",
+)
 def run_decay_detection(ticker: str = "600519") -> str:
     """运行策略衰减检测"""
     try:
@@ -130,6 +155,12 @@ def run_decay_detection(ticker: str = "600519") -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="get_risk_report",
+    description="综合风险报告（压力测试 + 衰减检测）。用于风险评估",
+    read_only=True,
+    skill="risk-assessment",
+)
 def get_risk_report(ticker: str = "600519") -> str:
     """综合风险报告（压力测试 + 衰减检测）"""
     try:
@@ -144,6 +175,12 @@ def get_risk_report(ticker: str = "600519") -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="list_strategies",
+    description="列出已注册的交易策略。用于回测工作流",
+    read_only=True,
+    skill="backtest-workflow",
+)
 def list_strategies() -> str:
     """列出已注册的交易策略"""
     try:
@@ -153,6 +190,12 @@ def list_strategies() -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="get_strategy_config",
+    description="获取策略配置参数。用于回测工作流",
+    read_only=True,
+    skill="backtest-workflow",
+)
 def get_strategy_config(strategy_name: str) -> str:
     """获取策略配置"""
     try:
@@ -164,8 +207,15 @@ def get_strategy_config(strategy_name: str) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="run_backtest",
+    description="运行回测（指定策略、股票、日期范围）。注意：写操作。支持 dry_run 参数预览。用于回测工作流",
+    read_only=False,
+    skill="backtest-workflow",
+)
 def run_backtest(strategy: str = "momentum", ticker: str = "600519",
-                 start_date: str = "2025-01-01", end_date: str = "") -> str:
+                 start_date: str = "2025-01-01", end_date: str = "",
+                 dry_run: bool = False) -> str:
     """运行回测"""
     # ---------- 参数验证 ----------
     if not strategy or not strategy.strip():
@@ -188,6 +238,22 @@ def run_backtest(strategy: str = "momentum", ticker: str = "600519",
         if sd > ed:
             return json.dumps({"error": "开始日期不能晚于结束日期"}, ensure_ascii=False)
 
+    if dry_run:
+        return json.dumps({
+            "success": True,
+            "message": "dry-run 模式：回测预览",
+            "dry_run": True,
+            "details": {
+                "strategy": strategy,
+                "ticker": ticker,
+                "start_date": start_date,
+                "end_date": end_date or "至今",
+                "steps": ["加载历史行情数据", "计算因子", "运行策略信号", "计算绩效指标", "保存回测结果"],
+                "estimated_time": "1-5 分钟",
+                "notes": "dry-run 模式仅返回操作预览，不执行实际回测和写操作",
+            },
+        }, ensure_ascii=False)
+
     try:
         from scripts.backtest import run_backtest as _run_bt
         import io
@@ -202,12 +268,20 @@ def run_backtest(strategy: str = "momentum", ticker: str = "600519",
         output = buf.getvalue()
         if not output.strip():
             return json.dumps({"error": "回测未产生结果（可能无数据或无交易信号）",
-                               "ticker": ticker, "strategy": strategy}, ensure_ascii=False)
-        return output
+                               "ticker": ticker, "strategy": strategy, "dry_run": False}, ensure_ascii=False)
+        result = json.loads(output)
+        result["dry_run"] = False
+        return json.dumps(result, ensure_ascii=False)
     except Exception as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
+        return json.dumps({"error": str(e), "dry_run": False}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="compare_backtest_runs",
+    description="对比最近多次回测结果。用于回测工作流",
+    read_only=True,
+    skill="backtest-workflow",
+)
 def compare_backtest_runs(limit: int = 5) -> str:
     """对比最近多次回测结果"""
     try:
@@ -232,6 +306,12 @@ def compare_backtest_runs(limit: int = 5) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="run_health_check",
+    description="运行系统健康检查。用于知识探索和每日研究",
+    read_only=True,
+    skill="knowledge-exploration",
+)
 def run_health_check() -> str:
     """运行系统健康检查"""
     try:
@@ -249,6 +329,12 @@ def run_health_check() -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
 
+@register_mcp_tool(
+    name="get_market_regime",
+    description="获取当前市场状态识别结果。用于风险评估",
+    read_only=True,
+    skill="risk-assessment",
+)
 def get_market_regime(days: int = 60) -> str:
     """获取当前市场状态识别结果"""
     try:

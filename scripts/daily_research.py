@@ -33,7 +33,6 @@ import json
 
 from data.provider import DataProvider
 from data.storage import DataStorage
-from data.cleaner import DataCleaner
 from research.factors import FactorEngine
 from research.fusion import FusionEngine
 from research.regime_detector import MarketRegimeDetector
@@ -67,7 +66,7 @@ def run_daily_research(target_date: date = None,
     kb = KnowledgeBase()
     factor_engine = FactorEngine()
 
-    # Step 1: 数据更新
+    # Step 1: 数据更新（增量，委托给 update_market_data）
     logger.info("[Step 1/5] 更新行情数据")
 
     if tickers is None:
@@ -78,24 +77,17 @@ def run_daily_research(target_date: date = None,
             tickers = ["000001", "000002", "600519", "300750", "002475"]
             logger.warning(f"使用默认股票列表: {tickers}")
 
-    logger.info("获取沪深300指数...")
     try:
-        index_df = DataProvider.get_index_daily("000300")
-        if not index_df.empty:
-            storage.save_index_daily("000300", index_df)
-            logger.success(f"沪深300: {len(index_df)} 条")
+        from scripts.update_data import update_market_data
+        update_result = update_market_data(
+            target_date=target_date,
+            tickers=tickers,
+            incremental=True,
+        )
+        logger.success(f"数据更新: {update_result['tickers_updated']} 只更新, "
+                       f"{update_result['rows_added']} 行新增")
     except Exception as e:
-        logger.warning(f"指数数据获取失败: {e}")
-
-    for i, ticker in enumerate(tickers):
-        logger.debug(f"获取 {ticker} ({i+1}/{len(tickers)})")
-        try:
-            df = DataProvider.get_stock_daily(ticker)
-            if not df.empty:
-                df = DataCleaner.clean_ohlcv(df)
-                storage.save_stock_daily(ticker, df)
-        except Exception as e:
-            logger.warning(f"{ticker} 获取失败: {e}")
+        logger.warning(f"数据更新失败（继续使用已有数据）: {e}")
 
     # Step 2: 因子计算 (含基本面数据合并)
     logger.info("[Step 2/5] 计算因子")
