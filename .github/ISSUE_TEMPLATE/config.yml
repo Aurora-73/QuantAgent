@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 提问与讨论
+    url: https://github.com/Aurora-73/QuantAgent/discussions
+    about: 使用问题、策略讨论、想法交流请发 Discussions，不要开 Issue。
+  - name: 📖 文档
+    url: https://github.com/Aurora-73/QuantAgent/tree/main/docs
+    about: 请先查阅文档，常见问题已在 docs/faq.md 中回答。

@@ -1,5 +1,63 @@
 # 变更记录
 
+## 2026-07-09
+
+### 文档一致性修复
+
+- **Skills 目录路径修正**：`README.md` / `README.en.md` 目录结构中 `.claude/skills/` 更正为 `skills/`（实际已于 2026-07-08 晚迁移，changelog 补记）
+- **README 路线图同步**：Phase 2 Walk-forward 验证、Phase 3 全部 5 项（MCP 自动发现 / DuckDB 优化 / I/O 优化 / dry-run / 财务数据）已勾选完成；新增 Phase 4「研究平台进化」反映已完成的 scheduler→systemd、周报生成、决策闭环、备份、参数扫描、realism、ADR-0003；原 Phase 4 仿真盘与实盘顺延为 Phase 5（未来）；添加 `docs/project/roadmap.md` 权威指针
+- **todo/mcp-protocol-testing.md 工具数指针化**：硬编码 "32 个工具" 改为 `--list-tools` 指针（L5 背景 / L40 待办项）；L22 历史测试记录加注当前工具数已增长
+
+### MCP 协议测试补全
+
+- 新建 `scripts/mcp_protocol_test.py`：通过 JSON-RPC (stdin/stdout) 自动化测试全部 48 个 MCP 工具
+- 全量测试结果：**45 通过 / 3 数据缺失（非故障）/ 0 失败**
+- **发现并修复 `run_factor_evaluation` bug**：成功路径缺少 return 语句，隐式返回 None 导致 FastMCP 类型校验失败
+- 写工具（update_data / run_daily_research / update_financials / update_data_incremental / run_backtest / generate_higher_order_report）全部通过 `dry_run=True` 验证
+
+### GitHub 社区建设
+
+- 创建 `.github/ISSUE_TEMPLATE/`：bug_report.md、feature_request.md、data_source_request.md、strategy_sharing.md + config.yml（含 Discussions 链接）
+- 创建 `.github/good-first-issue-data-adapter.md`：Good First Issue 文案（添加新数据源适配器），可直接发布到 GitHub
+- 创建 `CONTRIBUTING.md`：贡献指南（开发流程、代码风格、新 MCP 工具/策略添加方法、目录结构速查）
+
+### 集成测试（跨工具交叉验证）
+
+- 重写 `tests/test_mcp_integration.py`：旧测试全部过时（期望 dict 返回、错误函数签名、错误 registry API）
+- 新增 17 个集成测试，覆盖 8 个场景：Market Quick Check / Sector Screening / Factor Research / Risk Assessment / Backtest Workflow / Knowledge Exploration / Committee Chain / Registry Metadata
+- 全部 396 个测试通过（含 17 个新集成测试）
+
+### B3 Profiling 评估 → Phase 4 正式关闭
+
+- 对 `get_sector_index` / `get_market_overview` / `run_health_check` 跑 5 轮延迟采样
+- `get_sector_index` P95 ≈ 5.6s < 10s 阈值 → **不触发 B3**
+- `get_market_overview` P95 ≈ 73ms < 3s 阈值 → **不触发 B3**
+- 慢工具瓶颈是 AKShare API 外部 I/O，非计算密集，属于数据层优化范畴
+- **Phase 4 里程碑 M0-M5 全部完成，正式关闭**
+
+### P3.6 因子计算 I/O 优化
+
+- `data/sectors.py`：为 `get_industry_list()` / `get_concept_list()` 添加 24h 磁盘缓存（`data/cache/sectors/`），避免每次调用都命中 AKShare API（~5.5s → ~0ms 缓存命中）
+- `get_board_stocks()`：添加内存 + 磁盘双层缓存
+- `build_board_index()`：重构为优先从 DuckDB 批量查询（`_load_board_data_from_db`，单次 SQL `WHERE ticker IN (...)` 替代 N 次 API 调用），仅本地无数据时回退 API（`_load_board_data_from_api`）
+
+### P3.7 DuckDB 查询优化
+
+- `data/storage.py`：`save_stock_daily` / `append_stock_daily` / `save_index_daily` / `append_index_daily` 的 INSERT 语句添加 `ORDER BY date`，使 DuckDB zone-map 对日期范围查询生效
+- `data/optimizations.py`：`save_factors_batch` 的 INSERT 添加 `ORDER BY ticker, date, factor_name`
+- `data/storage.py`：新增 `DataStorage.analyze()` 方法，批量写入后刷新统计信息
+- `data/optimizations.py`：`apply_optimizations()` 初始化时 ANALYZE 所有核心表
+- `scripts/update_data.py` / `scripts/compute_factors.py`：批量写入后调用 `storage.analyze()`
+
+### P4.9 文档站点
+
+- 创建 `mkdocs.yml`：Material 主题，深色/浅色切换，中文搜索，完整 nav 结构（10 大类，45 页）
+- 创建 `requirements-docs.txt`：mkdocs + mkdocs-material 依赖
+- 创建 `.github/workflows/docs.yml`：GitHub Actions 自动部署到 GitHub Pages（push to main 触发）
+- 修复 `docs/getting-started/quickstart.md` 相对链接（缺少 `../` 前缀）
+- 修复 `docs/plan/archive/phase-a-b-plan-legacy.md` 相对链接（`../` → `../../`）
+- `mkdocs build --strict` 零警告通过，生成 45 个 HTML 页面
+
 ## 2026-07-08
 
 ### Skills 层构建

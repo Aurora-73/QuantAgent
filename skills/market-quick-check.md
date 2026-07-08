@@ -1,5 +1,3 @@
-# 市场快速检查工作流
-
 ---
 name: market-quick-check
 description: 快速获取市场概况、个股行情和指数数据的组合查询
@@ -22,6 +20,9 @@ workflow:
     mcp: get_universe
     next: 完成
 ---
+# 市场快速检查工作流
+
+
 
 ## 🔄 工作流总览
 

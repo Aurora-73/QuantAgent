@@ -160,7 +160,7 @@ quant-system/
 │   │   ├── server.py          # MCP Server entry
 │   │   ├── tools_data.py      # Data tools
 │   │   └── tools_risk.py      # Risk tools
-│   ├── .claude/skills/        # Skill workflows
+│   ├── skills/                # Skill workflows
 │   ├── configs/               # Configuration files
 │   └── monitoring/            # Monitoring layer
 ├── examples/                  # Usage examples
@@ -294,29 +294,41 @@ Standardized MCP tools for external Agent calls. Run `python -m mcp_server.serve
 - [x] Risk engine
 - [x] Monitoring and alerts
 
-### Phase 2: Signal Engine + Backtesting ⚡
+### Phase 2: Signal Engine + Backtesting ✅
 
 - [x] Strategy plugin interface
 - [x] Momentum strategy implementation
 - [x] Event-driven strategy
 - [x] MCP server
 - [x] Skills workflow layer
-- [ ] Walk-forward validation
+- [x] Walk-forward validation
 
-### Phase 3: Extensible + High Performance + Security 🛡️
+### Phase 3: Extensible + High Performance + Security ✅
 
-- [ ] MCP tool auto-discovery
-- [ ] DuckDB query optimization
-- [ ] Factor calculation I/O optimization
-- [ ] Write tool dry-run
-- [ ] Financial data integration
+- [x] MCP tool auto-discovery
+- [x] DuckDB query optimization
+- [x] Factor calculation I/O optimization
+- [x] Write tool dry-run
+- [x] Financial data integration
 
-### Phase 4: Simulation & Live Trading 📈
+### Phase 4: Research Platform Evolution ✅
+
+- [x] Incremental update + trading calendar + data freshness API
+- [x] Scheduler → systemd automation
+- [x] Weekly/Monthly/Quarterly report generation
+- [x] Backtest → decision memory auto-write
+- [x] Factor collinearity report + hypothesis auto-generation
+- [x] DuckDB backup + parameter scanning + execution realism
+- [x] Agent committee MCP-ification (ADR-0003)
+
+### Phase 5: Simulation & Live Trading 📈 (Future)
 
 - [ ] vnpy simulated trading
 - [ ] Slippage and execution monitoring
 - [ ] vnpy CTP/IB connection
 - [ ] Risk circuit breaker mechanism
+
+> 📋 For the authoritative detailed roadmap, see [`docs/project/roadmap.md`](docs/project/roadmap.md)
 
 ---
 

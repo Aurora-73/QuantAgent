@@ -1,0 +1,146 @@
+site_name: QuantAgent 量化交易研究系统
+site_description: 基于 MCP 协议的 A 股量化交易研究平台 — 数据、因子、回测、决策记忆一体化
+site_url: https://edalab.github.io/quant-system/
+repo_url: https://github.com/edalab/quant-system
+repo_name: edalab/quant-system
+edit_uri: edit/main/QuantAgent/docs/
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - navigation.tracking
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: 切换到深色模式
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: 切换到浅色模式
+  font:
+    text: Noto Sans SC
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+  - def_list
+  - footnotes
+  - tables
+
+plugins:
+  - search:
+      lang:
+        - en
+        - ja
+  - tags
+
+nav:
+  - 首页: README.md
+  - 快速上手:
+      - 安装与运行: getting-started/quickstart.md
+  - 核心概念:
+      - 系统架构: development/architecture.md
+      - MCP 工具能力: mcp-capabilities.md
+      - 数据契约: research/data_schema.md
+  - 开发指南:
+      - 因子引擎开发: development/factor_development.md
+      - 策略插件开发: development/strategy_development.md
+  - 运维手册:
+      - 服务器运行手册: operations/server_runbook.md
+      - 定时调度器: operations/scheduler.md
+      - 监控告警: operations/monitoring.md
+      - 风控系统: operations/risk_management.md
+      - 灾难恢复: operations/disaster_recovery.md
+  - 参考手册:
+      - 命令行接口: reference/cli_reference.md
+      - 配置参数: reference/configuration.md
+      - 参考项目分析: reference/reference-projects.md
+  - 研究方法:
+      - 回测最佳实践: research/backtesting.md
+      - 验证闭环设计: research/verification_loop.md
+  - 交易方法论 (Wiki):
+      - 实体策略:
+          - 突破交易: wiki/entities/breakout_trading.md
+          - 趋势跟随: wiki/entities/trend_following.md
+      - 场景应对:
+          - 熊市防御: wiki/scenarios/bear_market_defense.md
+          - 牛市布局: wiki/scenarios/bull_market_layout.md
+      - 策略来源:
+          - 海龟交易: wiki/sources/turtle_trading.md
+      - 综合比较:
+          - 动量 vs 价值: wiki/synthesis/momentum_vs_value.md
+  - 架构决策 (ADR):
+      - ADR 模板: adr/0000-template.md
+      - 0001 LLM 边界: adr/0001-llm-boundary.md
+      - 0002 DuckDB 存储: adr/0002-duckdb-storage.md
+      - 0003 Agent Committee: adr/0003-agent-committee.md
+  - 项目管理:
+      - 项目现状: project/project-status.md
+      - 路线图: project/roadmap.md
+      - 变更记录: project/changelog.md
+      - 安全说明: project/security.md
+      - 入门任务: project/good-first-issues.md
+  - 故障排除: runbook/troubleshooting.md
+  - 实施计划:
+      - 待解决问题: plan/issues.md
+      - 数据源分析: plan/data-source-analysis.md
+      - Phase 4 改进计划: plan/phase-4-improvement-plan.md
+      - 归档:
+          - 验收标准: plan/archive/acceptance-criteria.md
+          - 数据质量改进: plan/archive/data-quality-improvement-plan.md
+          - DuckDB 索引错误: plan/archive/issue-001-duckdb-index-error.md
+          - Linux 服务器测试: plan/archive/linux-server-test-plan.md
+          - Phase 0 问题: plan/archive/phase-0-issues.md
+          - Phase 2 实施计划: plan/archive/phase-2-implementation-plan.md
+          - Phase 3 改进计划: plan/archive/phase-3-improvement-plan.md
+          - Phase A/B 历史计划: plan/archive/phase-a-b-plan-legacy.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/edalab/quant-system
+  generator: false
+
+copyright: Copyright &copy; 2026 QuantAgent

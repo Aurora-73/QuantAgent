@@ -329,13 +329,12 @@ def run_daily_research(target_date: date = None,
         logger.warning(f"  因子中性化失败: {e}")
 
     # ============================================
-    # Step 2.5: Phase B — 市场状态 + 多源融合 + Agent 委员会
+    # Step 2.5: Phase B — 市场状态 + 多源融合
     # ============================================
     logger.info("[Step 2.5/5] Phase B 分析管线")
 
     regime = "unknown"
     regime_conf = 0.0
-    committee_review = None
 
     try:
         # 2.5a: Market regime detection
@@ -377,31 +376,10 @@ def run_daily_research(target_date: date = None,
     except Exception as e:
         logger.warning(f"  融合引擎失败: {e}")
 
-    try:
-        # 2.5c: Agent Committee review
-        from agents.committee import AgentCommittee
-        committee = AgentCommittee()
-        signals = {"000300": 0.3}
-        portfolio = {"max_drawdown": 0, "total_value": 1000000}
-
-        # Use first available snapshot or create a minimal one
-        review_snapshot = snapshot if 'snapshot' in dir() else None
-        if review_snapshot is None:
-            # Create minimal snapshot from available data
-            review_snapshot = fusion.collect(
-                ticker=tickers[0] if tickers else "000001",
-                target_date=target_date,
-                wiki_query=f"市场 {regime}",
-                extra_context={"regime": regime},
-            )
-
-        committee_review = committee.review(
-            review_snapshot, signals, portfolio
-        )
-        logger.info(f"  委员会共识: {committee_review.consensus_action} "
-                   f"(风险: {committee_review.risk_level})")
-    except Exception as e:
-        logger.warning(f"  Agent委员会失败: {e}")
+    # Agent 委员会评审已按 ADR-001 移至 MCP 工具（mcp_server/tools_committee.py），
+    # 由外部 agent 按需通过 review_data_quality / review_strategy_signals /
+    # review_risk_exposure / review_decision_history 调用并合成共识，不再在
+    # 日常研究管线内自动运行。
 
     # ============================================
     # Step 3: 新闻采集 + 结构化事件入库（非 LLM）
@@ -543,25 +521,8 @@ def run_daily_research(target_date: date = None,
         })
         logger.info(f"  今日预测已保存: {pred_id}")
 
-        # 4.5c: 记录决策记忆
-        if committee_review:
-            current_signal = 0.0
-            try:
-                current_signal = signals.get("000300", 0)
-            except NameError:
-                pass
-
-            dm.record_decision(
-                ticker="000300",
-                direction=committee_review.consensus_action,
-                weight=current_signal,
-                reason=f"委员会共识: {committee_review.consensus_action}, "
-                       f"风险: {committee_review.risk_level}",
-                signal_type="committee",
-                strategy="regime_switch",
-                decision_date=target_date,
-            )
-            logger.info(f"  决策记录: {committee_review.consensus_action}")
+        # 4.5c: 决策记忆（委员会共识记录已按 ADR-001 移至 MCP 工具按需触发；
+        #       日常管线仅保留预测追踪与历史收益回填）。
 
         # 4.5d: 社交情绪分析（已移除 LLM 调用，保留占位）
         # 原实现依赖 llm.social_analyzer，2026-07-06 随 LLM 模块清理移除。

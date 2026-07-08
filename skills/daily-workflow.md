@@ -1,5 +1,3 @@
-# 每日研究工作流
-
 ---
 name: daily-workflow
 description: 每日收盘后的标准研究流程，从数据更新到日报生成
@@ -22,6 +20,9 @@ workflow:
     mcp: get_market_overview
     next: 完成
 ---
+# 每日研究工作流
+
+
 
 ## 🔄 工作流总览
 

@@ -352,6 +352,14 @@ def run_factor_evaluation(ticker: str = "600519", factor_name: str = "momentum_2
                 "overall_score": report["overall_score"],
                 "grade": report["grade"],
             }, ensure_ascii=False)
+        return json.dumps({
+            "ticker": ticker,
+            "factor": factor_name,
+            "ic": ic,
+            "icir": icir,
+            "overall_score": report["overall_score"],
+            "grade": report["grade"],
+        }, ensure_ascii=False)
     except Exception as e:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
@@ -874,3 +882,62 @@ def update_data_incremental(tickers: str = "", dry_run: bool = False) -> str:
             "message": f"增量更新失败: {e}",
             "dry_run": False,
         }, ensure_ascii=False)
+
+
+# ============================================================
+# 因子共线性分析工具 (Phase 4 B2.2)
+# ============================================================
+
+@register_mcp_tool(
+    name="get_factor_collinearity",
+    description="分析因子共线性（Pearson 相关性矩阵 + 高相关因子组识别）。只报告不自动删减，由人工决策。用于因子研究",
+    read_only=True,
+    skill="factor-research",
+)
+def get_factor_collinearity(threshold: float = 0.7,
+                            tickers: str = "",
+                            days: int = 90) -> str:
+    """
+    分析因子共线性。
+
+    计算 29 个已注册因子之间的 Pearson 相关性，识别高相关因子组（|相关性| > threshold）。
+    **只报告不自动删减**，提供数据供人工决策保留哪些因子。
+
+    Args:
+        threshold: 高相关阈值，默认 0.7
+        tickers: 指定股票代码（逗号分隔），为空则使用全部可用因子数据
+        days: 回溯天数（默认 90 天）
+    """
+    try:
+        from datetime import date, timedelta
+        from research.factor_analysis import generate_collinearity_report
+
+        end = date.today()
+        start = (end - timedelta(days=days)).isoformat()
+        date_range = (start, end.isoformat())
+
+        ticker_list = [t.strip().zfill(6) for t in tickers.split(",")] if tickers else None
+
+        report = generate_collinearity_report(
+            threshold=threshold,
+            ticker_list=ticker_list,
+            date_range=date_range,
+        )
+
+        # 相关性矩阵较大时只返回高相关对和分组，避免 JSON 过大
+        if report.get("factor_count", 0) > 0:
+            # 只返回高相关对（已排序），不返回完整矩阵以控制响应大小
+            return json.dumps({
+                "factor_count": report["factor_count"],
+                "threshold": report["threshold"],
+                "high_pair_count": report["high_pair_count"],
+                "high_correlation_pairs": report["high_correlation_pairs"][:30],
+                "collinear_groups": report["collinear_groups"],
+                "group_count": report["group_count"],
+                "recommendations": report["recommendations"],
+                "note": "只报告不自动删减，由人工决策保留哪些因子",
+            }, ensure_ascii=False)
+        else:
+            return json.dumps(report, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)

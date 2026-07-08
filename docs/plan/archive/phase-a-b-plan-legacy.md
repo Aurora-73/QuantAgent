@@ -11,7 +11,7 @@
 
 > **本文档为历史计划文档，部分内容已过时。**
 >
-> 当前事实基线以 [`docs/project/project-status.md`](../project/project-status.md) 为准，路线图以 [`docs/project/roadmap.md`](../project/roadmap.md) 为准。
+> 当前事实基线以 [`docs/project/project-status.md`](../../project/project-status.md) 为准，路线图以 [`docs/project/roadmap.md`](../../project/roadmap.md) 为准。
 >
 > **主要冲突点**（已在下文相应段落标注 "⚠️ 已过时"）：
 >

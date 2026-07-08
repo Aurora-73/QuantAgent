@@ -84,6 +84,18 @@ def run_daily_pipeline():
         logger.error(f"定时每日研究失败: {e}")
 
 
+def run_backup():
+    """Run DuckDB database backup (B4.1). Runs every calendar day."""
+    logger.info("定时数据库备份开始")
+    try:
+        from scripts.backup import backup_database
+        result = backup_database()
+        logger.success(f"定时数据库备份完成: {result['backup_path']} "
+                       f"({result['size_mb']} MB)")
+    except Exception as e:
+        logger.error(f"定时数据库备份失败: {e}")
+
+
 def _get_calendar():
     """Get a TradingCalendar instance (owned by caller for cleanup)."""
     from data.trading_calendar import TradingCalendar
@@ -184,12 +196,15 @@ def start_scheduler():
     data_time = getattr(settings, 'schedule_data_update_time', '15:30')
     research_time = getattr(settings, 'schedule_research_time', '16:00')
     report_time = getattr(settings, 'schedule_report_time', '17:00')
+    backup_time = getattr(settings, 'schedule_backup_time', '02:00')
 
+    schedule.every().day.at(backup_time).do(run_backup)
     schedule.every().day.at(data_time).do(run_data_update)
     schedule.every().day.at(research_time).do(run_daily_pipeline)
     schedule.every().day.at(report_time).do(run_scheduled_reports)
 
-    logger.info(f"定时任务已配置: 数据更新 {data_time}, 每日研究 {research_time}, 高阶报告 {report_time}")
+    logger.info(f"定时任务已配置: 备份 {backup_time}, 数据更新 {data_time}, "
+                f"每日研究 {research_time}, 高阶报告 {report_time}")
     logger.info("调度器运行中... (Ctrl+C 退出)")
 
     while True:
@@ -202,7 +217,7 @@ def main():
     parser = argparse.ArgumentParser(description="定时任务调度器")
     parser.add_argument("--run-now", action="store_true", help="立即执行一次并退出")
     parser.add_argument("--dry-run", action="store_true", help="显示调度计划但不执行")
-    parser.add_argument("--task", choices=["data", "research", "reports", "all"],
+    parser.add_argument("--task", choices=["data", "research", "reports", "backup", "all"],
                        default="all", help="执行指定任务")
     args = parser.parse_args()
 
@@ -210,15 +225,19 @@ def main():
         data_time = getattr(settings, 'schedule_data_update_time', '15:30')
         research_time = getattr(settings, 'schedule_research_time', '16:00')
         report_time = getattr(settings, 'schedule_report_time', '17:00')
+        backup_time = getattr(settings, 'schedule_backup_time', '02:00')
         today = date.today()
         logger.info(f"调度计划 (今日: {today}, {'交易日' if is_trading_day(today) else '非交易日'}):")
+        logger.info(f"  {backup_time} — 数据库备份（每日）")
         logger.info(f"  {data_time} — 数据更新")
         logger.info(f"  {research_time} — 每日研究流程")
         logger.info(f"  {report_time} — 高阶报告（周五周报/月末月报/季末季报）")
-        logger.info(f"  仅交易日执行")
+        logger.info(f"  研究流程仅交易日执行；备份每日执行")
         return
 
     if args.run_now:
+        if args.task in ("backup", "all"):
+            run_backup()
         if args.task in ("data", "all"):
             run_data_update()
         if args.task in ("research", "all"):

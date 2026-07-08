@@ -182,10 +182,10 @@ python -m scripts brinson --universe csi300 --benchmark 000300
 
 ## 六、下一步
 
-- [命令行参考](reference/cli_reference.md) — 完整的命令行参数说明
-- [策略开发指南](development/strategy_development.md) — 如何编写自定义策略
-- [因子开发指南](development/factor_development.md) — 如何添加新因子
-- [回测最佳实践](research/backtesting.md) — 回测技巧和注意事项
-- [服务器运维](operations/server_runbook.md) — P1 闭环验证
-- [MCP Server](../mcp_server/server.py) — MCP 工具，供外部 Agent 调用
-- [故障排除](runbook/troubleshooting.md) — 常见问题解决
+- [命令行参考](../reference/cli_reference.md) — 完整的命令行参数说明
+- [策略开发指南](../development/strategy_development.md) — 如何编写自定义策略
+- [因子开发指南](../development/factor_development.md) — 如何添加新因子
+- [回测最佳实践](../research/backtesting.md) — 回测技巧和注意事项
+- [服务器运维](../operations/server_runbook.md) — P1 闭环验证
+- [MCP 工具能力](../mcp-capabilities.md) — MCP 工具清单与限制说明
+- [故障排除](../runbook/troubleshooting.md) — 常见问题解决

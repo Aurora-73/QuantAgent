@@ -474,6 +474,28 @@ class DataStorage:
             )
         """)
 
+    def analyze(self, table: str = None):
+        """
+        刷新 DuckDB 表统计信息（ANALYZE）。
+
+        在批量写入后调用，使查询优化器能利用最新的 zone-map 和基数统计。
+        单条写入无需调用——开销大于收益。
+
+        Args:
+            table: 指定表名（如 "stock_daily"、"research.factors"）；
+                   None 则刷新所有已知表。
+        """
+        tables = [table] if table else [
+            "stock_daily", "index_daily", "factors", "events",
+            "raw.stock_daily", "raw.index_daily",
+            "research.factors", "research.financials", "research.events",
+        ]
+        for t in tables:
+            try:
+                self.conn.execute(f"ANALYZE {t}")
+            except Exception as e:
+                logger.debug(f"ANALYZE {t} 跳过: {e}")
+
     # ============================================================
     # 行情数据
     # ============================================================
@@ -497,11 +519,13 @@ class DataStorage:
         df["date"] = pd.to_datetime(df["date"]).dt.date
 
         # public 表（向后兼容）— 先删除该股票所有数据，再插入
+        # ORDER BY date 使 DuckDB zone-maps 对日期范围查询生效
         self.conn.execute("DELETE FROM stock_daily WHERE ticker = ?", [ticker])
         self.conn.execute("""
             INSERT INTO stock_daily
             SELECT ticker, date, open, high, low, close, volume, amount, pct_change, turnover
             FROM df
+            ORDER BY date
         """)
 
         # raw 分层表（新架构）— 先删除该股票所有数据，再插入
@@ -510,6 +534,7 @@ class DataStorage:
             INSERT INTO raw.stock_daily
             SELECT ticker, date, open, high, low, close, volume, amount, pct_change, turnover, CURRENT_TIMESTAMP
             FROM df
+            ORDER BY date
         """)
 
     def load_stock_daily(self, ticker: str,
@@ -553,11 +578,13 @@ class DataStorage:
                 df[col] = None
 
         # public 表 — 先删除该指数所有数据，再插入（避免索引删除问题）
+        # ORDER BY date 使 DuckDB zone-maps 对日期范围查询生效
         self.conn.execute("DELETE FROM index_daily WHERE index_code = ?", [index_code])
         self.conn.execute("""
             INSERT INTO index_daily
             SELECT index_code, date, open, high, low, close, volume
             FROM df
+            ORDER BY date
         """)
 
         # raw 分层表 — 先删除该指数所有数据，再插入
@@ -566,6 +593,7 @@ class DataStorage:
             INSERT INTO raw.index_daily
             SELECT index_code, date, open, high, low, close, volume, CURRENT_TIMESTAMP
             FROM df
+            ORDER BY date
         """)
 
     def load_index_daily(self, index_code: str,
@@ -732,15 +760,18 @@ class DataStorage:
 
         df["date"] = pd.to_datetime(df["date"]).dt.date
 
+        # ORDER BY date 使 DuckDB zone-maps 对日期范围查询生效
         self.conn.execute("""
             INSERT INTO stock_daily
             SELECT ticker, date, open, high, low, close, volume, amount, pct_change, turnover
             FROM df
+            ORDER BY date
         """)
         self.conn.execute("""
             INSERT INTO raw.stock_daily
             SELECT ticker, date, open, high, low, close, volume, amount, pct_change, turnover, CURRENT_TIMESTAMP
             FROM df
+            ORDER BY date
         """)
 
     def append_index_daily(self, index_code: str, df: pd.DataFrame):
@@ -764,15 +795,18 @@ class DataStorage:
             if col not in df.columns:
                 df[col] = None
 
+        # ORDER BY date 使 DuckDB zone-maps 对日期范围查询生效
         self.conn.execute("""
             INSERT INTO index_daily
             SELECT index_code, date, open, high, low, close, volume
             FROM df
+            ORDER BY date
         """)
         self.conn.execute("""
             INSERT INTO raw.index_daily
             SELECT index_code, date, open, high, low, close, volume, CURRENT_TIMESTAMP
             FROM df
+            ORDER BY date
         """)
 
     # ============================================================

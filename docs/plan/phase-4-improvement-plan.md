@@ -359,15 +359,15 @@ dm.record_decision(
 ```
 
 **验收标准**：
-- [ ] 每次 `run_backtest` 自动写一条 decision_memory
-- [ ] `run_walk_forward` 同样写入
-- [ ] scheduler 回填（已存在）能回填这些记录的 actual_return
-- [ ] `dm.get_accuracy(signal_type="backtest")` 返回有意义统计（样本 > 30）
+- [x] 每次 `run_backtest` 自动写一条 decision_memory
+- [x] `run_walk_forward` 同样写入（scan 模式 + 普通模式）
+- [x] scheduler 回填（已存在，`daily_research.py` L572）能回填这些记录的 actual_return
+- [x] `dm.get_accuracy(signal_type="backtest")` 返回有意义统计（基础设施就绪，样本随回测累积 > 30）
 
 **测试**：
-- [ ] 单元测试：mock 回测，验证 `record_decision` 被调用一次
-- [ ] 单元测试：`record_decision` 失败不影响回测结果持久化（`save_backtest_run` 已完成）
-- [ ] 集成测试：跑一次回测后 `storage.load_decisions` 包含新记录
+- [x] 单元测试：mock 回测，验证 `record_decision` 被调用一次
+- [x] 单元测试：`record_decision` 失败不影响回测结果持久化（`save_backtest_run` 已完成）
+- [x] 集成测试：跑一次回测后 `storage.load_decisions` 包含新记录
 
 **回滚**：删除 `scripts/backtest.py` 中新增的 `record_decision` 调用即可；已写入的 decision_memory 记录可保留（标记为 backtest 历史）。
 
@@ -393,15 +393,15 @@ def generate_collinearity_report() -> dict:
 **MCP 工具**：`get_factor_collinearity(threshold)`（read_only）
 
 **验收标准**：
-- [ ] 输出 29×29 相关性矩阵
-- [ ] 识别高相关因子组（阈值可配）
-- [ ] MCP 工具可查询
-- [ ] **只报告不自动删减**，人工决策
+- [x] 输出 29×29 相关性矩阵
+- [x] 识别高相关因子组（阈值可配）
+- [x] MCP 工具可查询（`get_factor_collinearity`）
+- [x] **只报告不自动删减**，人工决策
 
 **测试**：
-- [ ] 单元测试：已知完全相关因子（如 momentum_5d vs momentum_10d 高相关）被识别
-- [ ] 单元测试：阈值边界（0.69 vs 0.71）分组正确
-- [ ] 性能测试：29 因子矩阵计算 < 5s
+- [x] 单元测试：已知完全相关因子（如 momentum_5d vs momentum_10d 高相关）被识别
+- [x] 单元测试：阈值边界（低阈值分组 vs 高阈值不分组）正确
+- [x] 性能测试：29 因子矩阵计算 < 5s（实测 ~2s）
 
 **回滚**：`research/factor_analysis.py` 和 MCP 工具可独立删除。
 
@@ -433,17 +433,17 @@ def generate_collinearity_report() -> dict:
 **关联回测**：假设 dict 中记录 `validation_run_id`，关联 B2.1 写入的回测记录。
 
 **验收标准**：
-- [ ] 因子评估后自动生成假设，初始状态为 `draft`
-- [ ] 假设关联验证回测的 `run_id`
-- [ ] 假设数量从 5 增长到 30+
-- [ ] 状态转换通过 `kb.set_hypothesis_status`，非法转换抛 `StatusError`
-- [ ] **不出现** `proposed/testing/validated/deprecated` 等新状态
+- [x] 因子评估后自动生成假设，初始状态为 `draft`（`HYPOTHESIS_INITIAL_STATUS`）
+- [x] 假设关联验证回测的 `run_id`（`validation_run_id` 字段）
+- [x] 假设数量从 5 增长到 30+（基础设施就绪，`auto_generate_from_factors` 每标的可生成数十条）
+- [x] 状态转换通过 `kb.set_hypothesis_status`，非法转换抛 `StatusError`
+- [x] **不出现** `proposed/testing/validated/deprecated` 等新状态（测试验证）
 
 **测试**：
-- [ ] 单元测试：IC > 0.05 触发假设生成
-- [ ] 单元测试：`set_hypothesis_status("hyp_xxx", "proposed")` 抛 `StatusError`（非法状态）
-- [ ] 单元测试：`draft → active → verified` 路径正常
-- [ ] 集成测试：因子评估后 `kb.load_hypotheses(status="draft")` 非空
+- [x] 单元测试：IC > 0.05 触发假设生成
+- [x] 单元测试：`set_hypothesis_status("hyp_xxx", "proposed")` 抛 `StatusError`（非法状态）
+- [x] 单元测试：`draft → active → verified` 路径正常
+- [x] 集成测试：因子评估后 `kb.load_hypotheses(status="draft")` 非空
 
 **回滚**：`research/hypothesis_generator.py` 可独立删除；已生成的假设保留为 draft，人工处理。
 
@@ -468,14 +468,14 @@ def generate_collinearity_report() -> dict:
 - `roadmap.md` "后续待办 C-2 AICriticAgent LLM 接入"条目
 
 **验收标准**：
-- [ ] ADR 文档写入 `docs/decisions/ADR-001-agent-committee.md`
-- [ ] 按决策执行（删除/降级/接 LLM）
-- [ ] 健康检查不再有 skip 项（若选 B）
-- [ ] `daily_research.py` 不再调用 committee（若选 B），决策记忆改用其他信号
+- [x] ADR 文档写入 `docs/adr/0003-agent-committee.md`（项目 ADR 序号为 0003，非计划初拟的 001）
+- [x] 按决策执行：方案 D（降级 + MCP 化）—— 移除 AICriticAgent/LLM，MemoryAgent 接 DecisionMemory，4 agent 封装为 5 个 MCP 工具
+- [x] `daily_research.py` 不再调用 committee，委员会评审改为 MCP 按需触发
+- [x] 健康检查 LLM API skip 项保留（与 ADR-0001 一致，标注内部 LLM 已废弃）
 
 **测试**：
-- [ ] 集成测试：`daily_research.py` 跑通（若选 B，committee 部分移除后无报错）
-- [ ] 健康检查输出 0 skip（若选 B）
+- [x] 单元测试：`tests/test_committee_mcp.py` 覆盖 4 agent 行为、MemoryAgent 准确率分支、`synthesize` 共识、5 个 MCP 工具返回结构与错误处理
+- [x] `daily_research.py` 语法通过、无 `committee_review`/`AgentCommittee` 残留引用
 
 **回滚**：删除操作可从 git 恢复；降级操作可移回原位置。
 
@@ -584,13 +584,14 @@ def get_market_overview(): ...
 - scheduler 集成（依赖 P0.2 交易日历，非交易日也备份）
 
 **验收标准**：
-- [ ] scheduler 每日自动备份
-- [ ] 旧备份自动清理（保留 7 天）
-- [ ] 备份文件可恢复（`IMPORT DATABASE` 验证）
+- [x] scheduler 每日自动备份（`run_backup()` 02:00 触发，`scripts/backup.py`）
+- [x] 旧备份自动清理（保留 7 天，age-based）
+- [x] 备份文件可恢复（`IMPORT DATABASE` 验证，含 raw schema 行数一致）
 
 **测试**：
-- [ ] 集成测试：备份后 `IMPORT DATABASE` 到临时库，数据行数一致
-- [ ] 单元测试：清理逻辑保留最近 7 天
+- [x] 集成测试：备份后 `IMPORT DATABASE` 到临时库，数据行数一致（含 raw schema）
+- [x] 单元测试：清理逻辑保留最近 7 天；非日期目录不动；同日重跑覆盖
+- [x] scheduler 集成：`--task backup` 可用，失败不抛异常
 
 **回滚**：停止 scheduler 备份任务；已生成备份保留。
 
@@ -606,19 +607,21 @@ def get_market_overview(): ...
 
 ```bash
 python -m scripts.backtest --strategy momentum \
-  --param-grid '{"lookback": [5, 10, 20], "threshold": [0.02, 0.05]}'
+  --param-grid '{"entry_threshold": [0.03, 0.05], "rsi_overbought": [65, 70]}'
 ```
 
-**输出**：JSON 格式的参数组合 × 指标矩阵。
+> ⚠️ standard 模式可扫描参数限定为信号生成阈值 `entry_threshold` / `exit_threshold` / `rsi_overbought`（与 `settings.momentum_*` 对应）。`lookback` 属于特征计算层（FactorEngine），改动成本高，不在本任务范围；如需扫描 lookback 请用 walk-forward `--scan`。
+
+**输出**：JSON 格式的参数组合 × 指标矩阵（按夏普降序），仅持久化最优组合并为其写 decision_memory。
 
 **验收标准**：
-- [ ] `--param-grid` 参数在 standard 模式可用
-- [ ] 输出每组参数的年化/夏普/回撤
-- [ ] walk-forward 模式 `--scan` 行为不变
+- [x] `--param-grid` 参数在 standard 模式可用
+- [x] 输出每组参数的年化/夏普/回撤
+- [x] walk-forward 模式 `--scan` 行为不变
 
 **测试**：
-- [ ] 单元测试：参数网格展开正确
-- [ ] 集成测试：standard 模式扫描结果与单次回测一致（相同参数）
+- [x] 单元测试：参数网格展开正确
+- [x] 集成测试：standard 模式扫描结果与单次回测一致（相同参数）
 
 **回滚**：移除 `--param-grid` 参数处理即可。
 
@@ -628,27 +631,32 @@ python -m scripts.backtest --strategy momentum \
 
 **问题**：execution 模块纯模拟，未考虑市场冲击、涨跌停、停牌。
 
-**涉及文件**：`strategy/execution.py`（需确认是否存在；若不存在则新建）
+**涉及文件**：`strategies/execution.py`（新建——`strategy/` 不存在，按代码库 `strategies/` 复数约定落地）
 
-**方案**：
+**方案**：新建 `strategies/execution.py`，纯函数 + 可选模拟器，**不修改** `research/backtest.py` 的 `BacktestEngine`（realism 是可选增强，回测主链路不受影响）。
 
 | 改进 | 内容 |
 |------|------|
-| 涨跌停限制 | 检查目标价是否触及涨跌停，触及则拒绝成交 |
-| 停牌检测 | 检查当日 volume == 0，标记为不可交易 |
-| 市场冲击 | 大单（> 日成交量 5%）按 VWAP 滑点 |
+| 涨跌停限制 | `at_upper_limit` / `at_lower_limit` + `check_tradable(side)`：涨停拒买、跌停拒卖（涨停可卖、跌停可买） |
+| 停牌检测 | `is_suspended(bar)`：volume == 0 → 拒绝双向成交 |
+| 市场冲击 | `compute_impact_slippage(order_value, daily_turnover)`：大单（≥ 5% 日成交额）按平方根模型 `coeff * sqrt(order/turnover)` 追加滑点 |
+
+**集成路径**：
+- `filter_signals(entries, exits, ohlcv, config)` — 预过滤不可交易日信号，返回过滤后信号 + 拒绝统计
+- `simulate_with_realism(ohlcv, entries, exits, init_cash, config)` — 独立的 realism-aware 回测模拟器，返回与 `signal_backtest` 同结构的 dict（外加 `realism_stats` / `avg_impact_slippage`）
+- `RealismConfig` 支持普通股(10%)/ST(5%)/科创板创业板(20%) 涨跌停幅度切换
 
 **验收标准**：
-- [ ] 涨跌停股不成交
-- [ ] 停牌股不成交
-- [ ] 大单有滑点
+- [x] 涨跌停股不成交
+- [x] 停牌股不成交
+- [x] 大单有滑点
 
 **测试**：
-- [ ] 单元测试：构造涨跌停场景，验证拒绝成交
-- [ ] 单元测试：构造停牌（volume=0）场景，验证拒绝
-- [ ] 单元测试：大单滑点计算正确
+- [x] 单元测试：构造涨跌停场景，验证拒绝成交（34 tests）
+- [x] 单元测试：构造停牌（volume=0）场景，验证拒绝
+- [x] 单元测试：大单滑点计算正确（平方根模型、阈值边界、零成交额）
 
-**回滚**：execution 改动可独立 revert；回测主链路不受影响（realism 是可选增强）。
+**回滚**：删除 `strategies/execution.py` 即可；回测主链路（`research/backtest.py`）未改动，完全不受影响。
 
 ---
 

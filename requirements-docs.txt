@@ -1,0 +1,7 @@
+# 文档站点构建依赖
+# 安装: pip install -r requirements-docs.txt
+# 构建: mkdocs build
+# 本地预览: mkdocs serve
+
+mkdocs>=1.6
+mkdocs-material>=9.5

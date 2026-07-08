@@ -1,19 +1,22 @@
 """
-Multi-Agent Committee — rule-based analysis pipeline with optional LLM critique.
+Multi-Agent Committee — rule-based analysis pipeline.
 
-5 agents review the same market snapshot independently, then vote:
+4 agents review the same market snapshot independently, then vote:
 
   DataAgent      → Data completeness, freshness, anomalies
   StrategyAgent  → Signal consolidation, cross-strategy conflict detection
   RiskAgent      → Position sizing, concentration, drawdown, VaR
   MemoryAgent    → Historical decision lookup, post-hoc return verification
-  AICriticAgent  → LLM-powered reviewer (optional, falls back to rule-based)
 
-Reference: fengyezi fund_ai_server/agents.py
+Per ADR-001: the former AICriticAgent (OpenAI LLM) was removed — the project
+is an MCP Server and LLM reasoning is provided by the external agent that
+orchestrates these review tools. Each agent is also exposed as an MCP tool
+(see mcp_server/tools_committee.py) so the external agent can spawn subagents,
+each invoking its own review tool, then synthesise the consensus itself.
 
 Usage:
-    committee = AgentCommittee()
-    review = committee.review(snapshot, signals, portfolio, use_llm=True)
+    committee = AgentCommittee(storage)
+    review = committee.review(snapshot, signals, portfolio)
 """
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -47,29 +50,32 @@ class CommitteeReview:
 
 class AgentCommittee:
     """
-    Rule-based 5-agent committee.
+    Rule-based 4-agent committee.
 
-    Each agent runs deterministic rules — no LLM in Phase B.
-    AICriticAgent is a pass-through stub until Phase D.
+    Each agent runs deterministic rules. MemoryAgent queries DecisionMemory
+    when a storage handle is supplied; otherwise it reports insufficient data.
     """
 
-    def __init__(self):
+    def __init__(self, storage=None):
+        """
+        Args:
+            storage: optional DataStorage for MemoryAgent decision lookups.
+        """
+        self._storage = storage
         self._review_history: list[CommitteeReview] = []
 
     def review(self, snapshot,               # MarketSnapshot
                signals: dict = None,         # {ticker: weight}
                portfolio: dict = None,       # {ticker: weight_pct, pnl_pct, ...}
-               context: dict = None,
-               use_llm: bool = False) -> CommitteeReview:
+               context: dict = None) -> CommitteeReview:
         """
-        Run full committee review.
+        Run full committee review (4 agents + consensus).
 
         Args:
             snapshot: MarketSnapshot from FusionEngine
             signals: Strategy weight vectors {ticker: weight}
             portfolio: Current portfolio state
             context: Additional context (date, regime, etc.)
-            use_llm: Enable LLM-powered AICriticAgent
 
         Returns:
             CommitteeReview with all votes and consensus
@@ -82,28 +88,24 @@ class AgentCommittee:
         risk_flags_all = []
 
         # ---- Agent 1: DataAgent ----
-        data_vote = self._data_agent(snapshot)
+        data_vote = self.data_agent(snapshot)
         review.votes.append(data_vote)
         risk_flags_all.extend(data_vote.risk_flags)
 
         # ---- Agent 2: StrategyAgent ----
-        strat_vote = self._strategy_agent(snapshot, signals)
+        strat_vote = self.strategy_agent(snapshot, signals)
         review.votes.append(strat_vote)
         risk_flags_all.extend(strat_vote.risk_flags)
 
         # ---- Agent 3: RiskAgent ----
-        risk_vote = self._risk_agent(snapshot, signals, portfolio)
+        risk_vote = self.risk_agent(snapshot, signals, portfolio)
         review.votes.append(risk_vote)
         risk_flags_all.extend(risk_vote.risk_flags)
 
         # ---- Agent 4: MemoryAgent ----
-        mem_vote = self._memory_agent(snapshot, signals)
+        mem_vote = self.memory_agent(snapshot, signals)
         review.votes.append(mem_vote)
         risk_flags_all.extend(mem_vote.risk_flags)
-
-        # ---- Agent 5: AICriticAgent (LLM-powered in Phase D) ----
-        ai_vote = self._ai_critic_agent(snapshot, signals, review.votes, use_llm=use_llm)
-        review.votes.append(ai_vote)
 
         # ---- Consensus ----
         review.risk_flags = list(set(risk_flags_all))
@@ -124,11 +126,33 @@ class AgentCommittee:
                     f"risk={review.risk_level}, human_review={review.human_review_needed}")
         return review
 
+    def synthesize(self, votes: list[AgentVote]) -> CommitteeReview:
+        """
+        Compute consensus from a pre-collected list of agent votes.
+
+        Use this when the individual agent reviews ran separately (e.g. each
+        via its own MCP tool / subagent) and the caller now wants the shared
+        consensus, risk level, and summary without re-running the agents.
+        """
+        review = CommitteeReview(votes=list(votes))
+        review.risk_flags = list(set(
+            f for v in votes for f in v.risk_flags
+        ))
+        self._compute_consensus(review)
+        review.risk_level = self._assess_risk_level(review)
+        review.human_review_needed = (
+            review.risk_level in ("high", "critical")
+            or review.consensus_action == "caution"
+            or len(review.risk_flags) >= 3
+        )
+        review.summary = self._generate_summary(review)
+        return review
+
     # ============================================================
     # Agent 1: DataAgent
     # ============================================================
 
-    def _data_agent(self, snapshot) -> AgentVote:
+    def data_agent(self, snapshot) -> AgentVote:
         """Check data completeness, freshness, and anomalies."""
         issues = []
         available = 0
@@ -169,7 +193,7 @@ class AgentCommittee:
     # Agent 2: StrategyAgent
     # ============================================================
 
-    def _strategy_agent(self, snapshot, signals: dict) -> AgentVote:
+    def strategy_agent(self, snapshot, signals: dict) -> AgentVote:
         """Analyze strategy signals for consistency and conflicts."""
         if not signals:
             return AgentVote("StrategyAgent", "hold", 0.3, "无策略信号")
@@ -205,7 +229,7 @@ class AgentCommittee:
     # Agent 3: RiskAgent
     # ============================================================
 
-    def _risk_agent(self, snapshot, signals: dict,
+    def risk_agent(self, snapshot, signals: dict,
                     portfolio: dict) -> AgentVote:
         """Check position sizing, concentration, drawdown, VaR."""
         flags = []
@@ -247,135 +271,61 @@ class AgentCommittee:
     # Agent 4: MemoryAgent
     # ============================================================
 
-    def _memory_agent(self, snapshot, signals: dict) -> AgentVote:
+    def memory_agent(self, snapshot, signals: dict) -> AgentVote:
         """
-        Query historical decisions and post-hoc returns.
+        Query historical decisions and post-hoc returns from DecisionMemory.
 
-        In Phase B: stub (no decision memory yet).
-        Phase C will query the real decision_memory table.
+        Looks up recent decision accuracy for the tickers in `signals`. When
+        accuracy is high and aligns with the signal direction, raises
+        confidence; when accuracy is poor or contradicts the signal, flags a
+        caution. Falls back to "insufficient data" when no storage or no
+        history is available.
         """
         if not signals:
             return AgentVote("MemoryAgent", "hold", 0.5, "无历史参考（无信号）")
 
-        # Placeholder — Phase C will do real queries
-        return AgentVote("MemoryAgent", "hold", 0.5,
-                        "历史数据不足（Phase C 接入决策记忆）",
-                        ["决策记忆模块未就绪"])
+        if self._storage is None:
+            return AgentVote("MemoryAgent", "hold", 0.4,
+                            "决策记忆未接入（无 storage）",
+                            ["决策记忆模块未就绪"])
 
-    # ============================================================
-    # Agent 5: AICriticAgent (LLM in Phase D, rule fallback)
-    # ============================================================
-
-    def _ai_critic_agent(self, snapshot, signals: dict,
-                         other_votes: list[AgentVote],
-                         use_llm: bool = False) -> AgentVote:
-        """
-        LLM-powered critique of other agents.
-
-        When use_llm=True and OpenAI client is available:
-          - Formats snapshot + signals + other votes into a structured prompt
-          - Gets LLM analysis of risks and opportunities
-          - Extracts action + confidence from LLM response
-
-        When use_llm=False or LLM unavailable:
-          - Rule-based pass-through: follows the majority vote of other agents
-          - Slightly reduces confidence to indicate lack of independent analysis
-
-        Returns:
-            AgentVote from AICriticAgent
-        """
-        if use_llm:
-            llm_vote = self._llm_critic(snapshot, signals, other_votes)
-            if llm_vote is not None:
-                return llm_vote
-
-        # Fallback: rule-based pass-through
-        action_counts = {"bullish": 0, "bearish": 0, "hold": 0, "caution": 0}
-        for v in other_votes:
-            action_counts[v.action] = action_counts.get(v.action, 0) + 1
-        majority_action = max(action_counts, key=action_counts.get)
-
-        # Slightly lower confidence to indicate no independent analysis
-        base_conf = 0.4
-        return AgentVote(
-            "AICriticAgent", majority_action, base_conf,
-            f"规则跟随: 多数→{majority_action} ({'LLM不可用' if use_llm else 'LLM未启用'})",
-            ["AI 评审使用规则回退"] if use_llm else [],
-        )
-
-    def _llm_critic(self, snapshot, signals: dict,
-                    other_votes: list[AgentVote]) -> Optional[AgentVote]:
-        """LLM-based critique — OpenAI integration."""
         try:
-            from openai import OpenAI
-            from configs.settings import settings
-
-            api_key = settings.openai_api_key
-            model = getattr(settings, "llm_model", "gpt-4o-mini")
-            if not api_key:
-                return None
-
-            client = OpenAI(api_key=api_key)
-
-            # Build prompt from snapshot and votes
-            vote_summary = "\n".join(
-                f"- {v.agent}: {v.action} (置信度{v.confidence:.0%}, 理由: {v.reason})"
-                for v in other_votes
-            )
-
-            signal_summary = ""
-            if signals:
-                signal_summary = "\n".join(
-                    f"- {ticker}: weight={w:+.2f}"
-                    for ticker, w in list(signals.items())[:10]
-                )
-
-            prompt = f"""你是一个量化交易系统的 AI 评审员 (AICriticAgent)。请评审以下市场分析和投票。
-
-## 其他 Agent 投票
-{vote_summary}
-
-## 策略信号
-{signal_summary or "- 无信号"}
-
-## 市场方向
-{getattr(snapshot, 'direction', 'neutral')} (置信度 {getattr(snapshot, 'confidence', 0.5):.0%})
-
-## 市场状态
-{getattr(snapshot, 'regime', 'unknown')}
-
-## 你的任务
-分析上述投票和信号的一致性，识别潜在风险或被忽视的机会。
-
-请输出 JSON:
-{{
-    "action": "bullish/bearish/hold/caution",
-    "confidence": 0.0-1.0,
-    "reason": "你的分析理由 (中文, 20-50字)",
-    "risk_flags": ["风险1", "风险2"]
-}}"""
-
-            resp = client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.2,
-                response_format={"type": "json_object"},
-                max_tokens=300,
-            )
-
-            import json
-            result = json.loads(resp.choices[0].message.content)
-            action = result.get("action", "hold")
-            confidence = min(float(result.get("confidence", 0.5)), 0.95)
-            reason = result.get("reason", "LLM 分析完成")
-            risk_flags = result.get("risk_flags", [])
-
-            logger.info(f"  AICriticAgent(LLM): {action} conf={confidence:.0%}")
-            return AgentVote("AICriticAgent", action, confidence, reason, risk_flags)
-
+            from knowledge.decision_memory import DecisionMemory
+            dm = DecisionMemory(self._storage)
+            accuracy = dm.get_accuracy(days=90) or {}
         except Exception as e:
-            logger.warning(f"  AICriticAgent LLM 失败: {e}")
-            return None
+            logger.warning(f"MemoryAgent 查询失败: {e}")
+            return AgentVote("MemoryAgent", "hold", 0.4,
+                            f"决策记忆查询失败: {e}",
+                            ["决策记忆查询异常"])
+
+        total = accuracy.get("total", 0) if isinstance(accuracy, dict) else 0
+        if not total or total < 5:
+            return AgentVote("MemoryAgent", "hold", 0.4,
+                            f"历史样本不足 ({total} 条决策)")
+
+        correct = accuracy.get("correct", 0)
+        acc_ratio = correct / total if total else 0.0
+
+        # Aggregate signal direction
+        total_weight = sum(signals.values())
+        signal_dir = "bullish" if total_weight > 0.1 else (
+            "bearish" if total_weight < -0.1 else "neutral")
+
+        flags = []
+        if acc_ratio >= 0.6:
+            return AgentVote("MemoryAgent", signal_dir if signal_dir != "neutral" else "hold",
+                            min(0.5 + (acc_ratio - 0.5), 0.85),
+                            f"历史决策准确率 {acc_ratio:.0%} ({correct}/{total})，支持当前方向")
+        elif acc_ratio <= 0.4:
+            flags.append(f"历史决策准确率偏低 ({acc_ratio:.0%})")
+            return AgentVote("MemoryAgent", "caution", 0.6,
+                            f"历史决策准确率 {acc_ratio:.0%} ({correct}/{total})，建议谨慎",
+                            flags)
+
+        return AgentVote("MemoryAgent", "hold", 0.5,
+                        f"历史决策准确率 {acc_ratio:.0%} ({correct}/{total})，参考价值有限",
+                        flags)
 
     # ============================================================
     # Consensus

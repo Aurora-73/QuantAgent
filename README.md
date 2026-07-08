@@ -160,7 +160,7 @@ quant-system/
 │   │   ├── server.py          # MCP Server入口
 │   │   ├── tools_data.py      # 数据工具
 │   │   └── tools_risk.py      # 风险工具
-│   ├── .claude/skills/        # Skill工作流
+│   ├── skills/                # Skill工作流
 │   ├── configs/               # 配置文件
 │   └── monitoring/            # 监控层
 ├── examples/                  # 使用示例
@@ -294,29 +294,41 @@ class StrategyBase(ABC):
 - [x] 风控引擎
 - [x] 监控告警
 
-### 第二阶段：信号引擎 + 回测 ⚡
+### 第二阶段：信号引擎 + 回测 ✅
 
 - [x] 策略插件接口
 - [x] 动量策略实现
 - [x] 事件驱动策略
 - [x] MCP 服务端
 - [x] Skills 工作流层
-- [ ] Walk-forward 验证
+- [x] Walk-forward 验证
 
-### 第三阶段：可扩展 + 高性能 + 安全 🛡️
+### 第三阶段：可扩展 + 高性能 + 安全 ✅
 
-- [ ] MCP 工具自动发现
-- [ ] DuckDB 查询优化
-- [ ] 因子计算 I/O 优化
-- [ ] 写工具 dry-run
-- [ ] 财务数据接入
+- [x] MCP 工具自动发现
+- [x] DuckDB 查询优化
+- [x] 因子计算 I/O 优化
+- [x] 写工具 dry-run
+- [x] 财务数据接入
 
-### 第四阶段：仿真盘与实盘 📈
+### 第四阶段：研究平台进化 ✅
+
+- [x] 独立增量更新 + 交易日历 + 数据新鲜度 API
+- [x] Scheduler → systemd 自动化
+- [x] 周报/月报/季报生成
+- [x] 回测 → 决策记忆自动写入
+- [x] 因子共线性报告 + 假设自动生成
+- [x] DuckDB 自动备份 + 参数扫描 + 执行 realism
+- [x] Agent 委员会 MCP 化（ADR-0003）
+
+### 第五阶段：仿真盘与实盘 📈（未来）
 
 - [ ] vnpy 模拟交易
 - [ ] 滑点与成交监控
 - [ ] vnpy CTP/IB 连接
 - [ ] 风控熔断机制
+
+> 📋 详细路线图与优先级见 [`docs/project/roadmap.md`](docs/project/roadmap.md)（权威来源）
 
 ---
 

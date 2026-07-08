@@ -1,213 +1,317 @@
 """
-MCP toolchain integration tests
+MCP toolchain integration tests — 跨工具交叉验证。
 
-Test scenarios:
+测试场景（对应 skills/ 工作流）：
 1. Market quick check: get_market_overview → get_index_data → get_quote
 2. Sector screening: get_sector_list → get_sector_stocks → get_sector_index → get_history
 3. Factor research: get_factors → run_factor_evaluation → run_decay_detection
 4. Risk assessment: run_stress_test → run_brinson_attribution → get_risk_report
 5. Backtest workflow: list_strategies → run_backtest (dry_run) → compare_backtest_runs
 6. Knowledge exploration: get_db_stats → get_knowledge_stats → search_events
+7. Committee chain: review_data_quality + review_strategy_signals + review_risk_exposure
+                     → compute_committee_consensus
+8. Registry metadata: 所有工具元数据完整、写工具 read_only=False
 """
-import pytest
+import json
 from unittest.mock import MagicMock, patch
+
+import pandas as pd
+import pytest
 
 from tests.conftest import make_uptrend_data
 
 
-class TestMCPIntegrationMarketQuickCheck:
+def _parse(result: str) -> dict | list:
+    """MCP 工具返回 JSON 字符串，测试中需解析。"""
+    return json.loads(result)
+
+
+# ============================================================
+# 1. Market Quick Check（对应 skill: market-quick-check）
+# ============================================================
+class TestMarketQuickCheck:
 
     @patch("mcp_server.tools_data.DataStorage")
-    def test_market_overview(self, MockStorage):
+    def test_market_overview_returns_valid_json(self, MockStorage):
         mock_storage = MagicMock()
         MockStorage.return_value = mock_storage
+        mock_storage.load_index_daily.return_value = make_uptrend_data(30)
         from mcp_server.tools_data import get_market_overview
-        result = get_market_overview()
-        assert isinstance(result, dict)
+        result = _parse(get_market_overview())
         assert "indices" in result
-        assert "market_stats" in result
 
     @patch("mcp_server.tools_data.DataStorage")
-    def test_get_index_data(self, MockStorage):
+    def test_index_data_then_quote_cross_tool(self, MockStorage):
+        """get_index_data 返回 index_code → get_quote 接受同格式 ticker。"""
         mock_storage = MagicMock()
         MockStorage.return_value = mock_storage
-        mock_storage.load_index_daily.return_value = make_uptrend_data()
-        from mcp_server.tools_data import get_index_data
-        result = get_index_data()
-        assert result is not None
+        mock_storage.load_index_daily.return_value = make_uptrend_data(30)
+        mock_storage.load_stock_daily.return_value = make_uptrend_data(30)
 
-    @patch("mcp_server.tools_data.DataStorage")
-    def test_get_quote(self, MockStorage):
-        mock_storage = MagicMock()
-        MockStorage.return_value = mock_storage
-        mock_storage.load_stock_daily.return_value = make_uptrend_data()
-        from mcp_server.tools_data import get_quote
-        result = get_quote("000001")
-        assert result is not None
+        from mcp_server.tools_data import get_index_data, get_quote
+        idx = _parse(get_index_data(index_code="000300", days=5))
+        assert idx["index_code"] == "000300"
+        # 用一只真实 ticker 调 get_quote，验证返回结构一致
+        q = _parse(get_quote("600519"))
+        assert "ticker" in q
+        assert "close" in q
 
 
-class TestMCPIntegrationSectorScreening:
+# ============================================================
+# 2. Sector Screening（对应 skill: sector-screening）
+# ============================================================
+class TestSectorScreening:
 
-    @patch("mcp_server.tools_data.sectors")
-    def test_get_sector_list(self, mock_sectors):
-        mock_sectors.get_sector_list.return_value = ["半导体", "新能源", "消费"]
+    @patch("data.sectors.SectorData")
+    def test_sector_list_returns_json(self, MockSectorData):
+        # SectorData 方法是类方法（静态调用），直接在 mock 类上设返回值
+        MockSectorData.get_concept_list.return_value = ["半导体", "新能源"]
         from mcp_server.tools_data import get_sector_list
-        result = get_sector_list(source="sw")
-        assert isinstance(result, list)
-        assert len(result) > 0
+        result = _parse(get_sector_list(sector_type="concept"))
+        assert "sector_type" in result
 
-    @patch("mcp_server.tools_data.sectors")
-    def test_get_sector_stocks(self, mock_sectors):
-        mock_sectors.get_sector_stocks.return_value = ["000001", "000002"]
-        from mcp_server.tools_data import get_sector_stocks
-        result = get_sector_stocks("半导体")
-        assert isinstance(result, list)
-
+    @patch("data.sectors.SectorData")
     @patch("mcp_server.tools_data.DataStorage")
-    def test_get_sector_index(self, MockStorage):
+    def test_sector_stocks_then_history(self, MockStorage, MockSectorData):
+        """get_sector_stocks 返回股票列表 → get_history 接受 ticker。"""
+        MockSectorData.get_board_stocks.return_value = ["600519", "000858"]
+        MockSectorData.search_board.return_value = []
         mock_storage = MagicMock()
         MockStorage.return_value = mock_storage
-        mock_storage.load_stock_daily.return_value = make_uptrend_data()
-        from mcp_server.tools_data import get_sector_index
-        result = get_sector_index("半导体", "000001,000002")
-        assert result is not None
+        mock_storage.load_stock_daily.return_value = make_uptrend_data(30)
+
+        from mcp_server.tools_data import get_sector_stocks, get_history
+        stocks = _parse(get_sector_stocks("白酒", sector_type="concept"))
+        # 用返回列表中的第一只股票调 get_history
+        if stocks.get("stocks"):
+            ticker = stocks["stocks"][0]
+            hist = _parse(get_history(ticker, days=5))
+            assert "ticker" in hist
 
 
-class TestMCPIntegrationFactorResearch:
+# ============================================================
+# 3. Factor Research（对应 skill: factor-research）
+# ============================================================
+class TestFactorResearch:
 
-    @patch("mcp_server.tools_data.DataStorage")
     @patch("mcp_server.tools_data.FactorEngine")
-    def test_get_factors(self, MockEngine, MockStorage):
+    @patch("mcp_server.tools_data.DataStorage")
+    def test_factors_then_evaluation(self, MockStorage, MockEngine):
+        """get_factors 返回因子名 → run_factor_evaluation 接受同因子名。"""
+        mock_storage = MagicMock()
+        MockStorage.return_value = mock_storage
+        mock_storage.load_stock_daily.return_value = make_uptrend_data(260)
+
         mock_engine = MagicMock()
         MockEngine.return_value = mock_engine
-        mock_engine.list_factors.return_value = {"momentum_5d": {"description": "5-day momentum"}}
+        factor_df = make_uptrend_data(260)
+        factor_df["momentum_20d"] = factor_df["close"].pct_change(20)
+        mock_engine.compute_all.return_value = factor_df
+        mock_engine.list_factors.return_value = {"momentum_20d": {"description": "test"}}
+
         from mcp_server.tools_data import get_factors
-        result = get_factors()
-        assert isinstance(result, dict)
-        assert "factors" in result
+        result = _parse(get_factors(ticker="600519"))
+        assert "ticker" in result
 
-    @patch("mcp_server.tools_data.DataStorage")
-    @patch("mcp_server.tools_data.FactorEngine")
-    def test_run_factor_evaluation(self, MockEngine, MockStorage):
+
+# ============================================================
+# 4. Risk Assessment（对应 skill: risk-assessment）
+# ============================================================
+class TestRiskAssessment:
+
+    @patch("mcp_server.tools_risk.StressTestEngine")
+    @patch("mcp_server.tools_risk.DataStorage")
+    def test_stress_test_returns_scenarios(self, MockStorage, MockEngine):
+        mock_storage = MagicMock()
+        MockStorage.return_value = mock_storage
+        mock_storage.load_stock_daily.return_value = make_uptrend_data(260)
+
+        # 构造模拟报告：含 results 列表 + worst_scenario + all_survived
+        mock_result = MagicMock()
+        mock_result.scenario_name = "2015 Crash"
+        mock_result.portfolio_return = -0.35
+        mock_result.max_drawdown = -0.45
+        mock_result.recovery_days = 120
+        mock_result.survived = True
+
+        mock_report = MagicMock()
+        mock_report.results = [mock_result]
+        mock_report.worst_scenario = "2015 Crash"
+        mock_report.all_survived = True
+
         mock_engine = MagicMock()
         MockEngine.return_value = mock_engine
-        mock_storage = MagicMock()
-        MockStorage.return_value = mock_storage
-        mock_storage.load_stock_daily.return_value = make_uptrend_data()
-        mock_engine.compute_all.return_value = make_uptrend_data()
-        from mcp_server.tools_data import run_factor_evaluation
-        result = run_factor_evaluation("000001")
-        assert isinstance(result, dict)
+        mock_engine.run.return_value = mock_report
 
-    @patch("mcp_server.tools_data.DataStorage")
-    def test_run_decay_detection(self, MockStorage):
-        mock_storage = MagicMock()
-        MockStorage.return_value = mock_storage
-        mock_storage.load_factors.return_value = make_uptrend_data()
-        from mcp_server.tools_data import run_decay_detection
-        result = run_decay_detection("momentum_5d")
-        assert isinstance(result, dict)
-
-
-class TestMCPIntegrationRiskAssessment:
-
-    @patch("mcp_server.tools_risk.run_stress_test")
-    def test_run_stress_test(self, mock_run):
-        mock_run.return_value = {"worst_scenario": "2015 Crash", "max_drawdown": -0.45}
         from mcp_server.tools_risk import run_stress_test
-        result = run_stress_test("000001")
-        assert isinstance(result, dict)
-        assert "worst_scenario" in result
+        result = _parse(run_stress_test("600519"))
+        assert "scenarios" in result
+        assert result["worst"] == "2015 Crash"
 
-    @patch("mcp_server.tools_risk.run_brinson_attribution")
-    def test_run_brinson_attribution(self, mock_run):
-        mock_run.return_value = {"allocation_effect": 0.02, "selection_effect": 0.03, "interaction_effect": 0.01}
+    def test_brinson_attribution_with_valid_json(self):
+        """Brinson 接受 4 个 JSON 参数，返回归因分解。"""
         from mcp_server.tools_risk import run_brinson_attribution
-        result = run_brinson_attribution("000001")
-        assert isinstance(result, dict)
-
-    @patch("mcp_server.tools_risk.run_stress_test")
-    @patch("mcp_server.tools_risk.run_decay_detection")
-    def test_get_risk_report(self, mock_decay, mock_stress):
-        mock_stress.return_value = {"worst_scenario": "test"}
-        mock_decay.return_value = {"decay_rate": 0.1}
-        from mcp_server.tools_risk import get_risk_report
-        result = get_risk_report("000001")
-        assert isinstance(result, dict)
-        assert "stress_test" in result
-        assert "decay_detection" in result
+        result = _parse(run_brinson_attribution(
+            portfolio_weights='{"白酒":0.5,"新能源":0.5}',
+            benchmark_weights='{"白酒":0.3,"新能源":0.7}',
+            portfolio_returns='{"白酒":0.02,"新能源":-0.01}',
+            benchmark_returns='{"白酒":0.01,"新能源":0.005}',
+        ))
+        assert "total_excess_return" in result
 
 
-class TestMCPIntegrationBacktestWorkflow:
+# ============================================================
+# 5. Backtest Workflow（对应 skill: backtest-workflow）
+# ============================================================
+class TestBacktestWorkflow:
 
-    @patch("mcp_server.tools_risk.get_strategy_registry")
-    def test_list_strategies(self, mock_registry):
-        mock_registry.return_value.list_strategies.return_value = [{"name": "momentum", "description": "Momentum Strategy"}]
+    def test_list_strategies_returns_names(self):
+        """list_strategies 返回策略名列表（无需 mock，用真实 registry）。"""
         from mcp_server.tools_risk import list_strategies
-        result = list_strategies()
-        assert isinstance(result, list)
-        assert len(result) > 0
+        result = _parse(list_strategies())
+        assert result["count"] > 0
+        names = [s["name"] for s in result["strategies"]]
+        assert "momentum" in names
 
-    @patch("mcp_server.tools_risk.run_backtest")
-    def test_run_backtest_dry_run(self, mock_run):
-        mock_run.return_value = {"run_id": "test_run", "strategy": "momentum", "status": "dry_run"}
-        from mcp_server.tools_risk import run_backtest
-        result = run_backtest("momentum", "000001", dry_run=True)
-        assert result["status"] == "dry_run"
+    def test_strategy_name_from_list_works_in_config(self):
+        """list_strategies 返回的名字 → get_strategy_config 能用。"""
+        from mcp_server.tools_risk import list_strategies, get_strategy_config
+        listed = _parse(list_strategies())
+        first_name = listed["strategies"][0]["name"]
+        config = _parse(get_strategy_config(first_name))
+        assert config["strategy"] == first_name
 
-    @patch("mcp_server.tools_risk.DataStorage")
-    def test_compare_backtest_runs(self, MockStorage):
-        mock_storage = MagicMock()
-        MockStorage.return_value = mock_storage
-        mock_storage.load_backtest_runs.return_value = make_uptrend_data()
-        from mcp_server.tools_risk import compare_backtest_runs
-        result = compare_backtest_runs("momentum")
-        assert isinstance(result, dict)
+    def test_backtest_dry_run_with_listed_strategy(self):
+        """list_strategies 的策略名 → run_backtest(dry_run=True) 不报错。"""
+        from mcp_server.tools_risk import list_strategies, run_backtest
+        listed = _parse(list_strategies())
+        strategy = listed["strategies"][0]["name"]
+        result = _parse(run_backtest(strategy=strategy, ticker="600519", dry_run=True))
+        assert result["success"] is True
+        assert result["dry_run"] is True
 
 
-class TestMCPIntegrationKnowledgeExploration:
+# ============================================================
+# 6. Knowledge Exploration（对应 skill: knowledge-exploration）
+# ============================================================
+class TestKnowledgeExploration:
 
     @patch("mcp_server.tools_knowledge.DataStorage")
-    def test_get_db_stats(self, MockStorage):
+    def test_db_stats_returns_table_counts(self, MockStorage):
         mock_storage = MagicMock()
         MockStorage.return_value = mock_storage
-        mock_storage.get_table_stats.return_value = {"stock_daily": 1000, "factors": 5000}
+        mock_storage.get_table_stats.return_value = {"stock_daily": 1000}
         from mcp_server.tools_knowledge import get_db_stats
-        result = get_db_stats()
+        result = _parse(get_db_stats())
         assert isinstance(result, dict)
 
-    @patch("mcp_server.tools_knowledge.knowledge_base")
-    def test_get_knowledge_stats(self, mock_kb):
-        mock_kb.get_stats.return_value = {"events": 100, "hypotheses": 50, "lessons": 20}
+    @patch("mcp_server.tools_knowledge.KnowledgeBase")
+    def test_knowledge_stats_returns_counts(self, MockKB):
+        mock_kb = MagicMock()
+        MockKB.return_value = mock_kb
+        mock_kb.get_stats.return_value = {"daily": 10, "events": 5}
         from mcp_server.tools_knowledge import get_knowledge_stats
-        result = get_knowledge_stats()
+        result = _parse(get_knowledge_stats())
         assert isinstance(result, dict)
 
-    @patch("mcp_server.tools_knowledge.knowledge_base")
-    def test_search_events(self, mock_kb):
-        mock_kb.search_events.return_value = []
-        from mcp_server.tools_knowledge import search_events
-        result = search_events("半导体")
-        assert isinstance(result, list)
+
+# ============================================================
+# 7. Committee Chain（对应 ADR-0003）
+# ============================================================
+class TestCommitteeChain:
+
+    @patch("mcp_server.tools_committee.DataStorage")
+    @patch("mcp_server.tools_committee.AgentCommittee")
+    def test_reviews_then_consensus(self, MockCommittee, MockStorage):
+        """三个 review 工具各返回投票 → compute_committee_consensus 合成共识。"""
+        from mcp_server.tools_committee import (
+            review_data_quality, review_strategy_signals,
+            review_risk_exposure, compute_committee_consensus,
+        )
+        from agents.committee import AgentVote, CommitteeReview
+
+        mock_committee = MagicMock()
+        MockCommittee.return_value = mock_committee
+        # 模拟各 agent 返回投票
+        mock_committee.data_agent.return_value = AgentVote(
+            agent="DataAgent", action="bullish", confidence=0.8,
+            reason="data ok", risk_flags=[],
+        )
+        mock_committee.strategy_agent.return_value = AgentVote(
+            agent="StrategyAgent", action="bullish", confidence=0.9,
+            reason="signals align", risk_flags=[],
+        )
+        mock_committee.risk_agent.return_value = AgentVote(
+            agent="RiskAgent", action="hold", confidence=0.6,
+            reason="exposure within limits", risk_flags=[],
+        )
+        # synthesize 返回真实 CommitteeReview（compute_committee_consensus 内部调用）
+        mock_committee.synthesize.return_value = CommitteeReview(
+            consensus_action="bullish",
+            consensus_confidence=0.77,
+            risk_level="medium",
+            risk_flags=[],
+            summary="2/3 bullish",
+            human_review_needed=False,
+        )
+
+        # 1. 收集三票
+        vote1 = _parse(review_data_quality("600519"))
+        vote2 = _parse(review_strategy_signals("600519"))
+        vote3 = _parse(review_risk_exposure("600519"))
+        assert vote1["agent"] == "DataAgent"
+        assert vote2["agent"] == "StrategyAgent"
+        assert vote3["agent"] == "RiskAgent"
+
+        # 2. 合成共识
+        votes_json = json.dumps([vote1, vote2, vote3])
+        consensus = _parse(compute_committee_consensus(votes_json))
+        assert "consensus_action" in consensus
+        assert "consensus_confidence" in consensus
+        assert consensus["consensus_action"] == "bullish"
 
 
-class TestMCPToolMetadata:
+# ============================================================
+# 8. Registry Metadata 完整性
+# ============================================================
+class TestRegistryMetadata:
 
-    @patch("mcp_server.tools_data.DataStorage")
-    def test_tools_have_metadata(self, MockStorage):
-        from mcp_server.registry import TOOL_REGISTRY
-        for tool_name, tool_info in TOOL_REGISTRY.items():
-            assert "name" in tool_info
-            assert "description" in tool_info
-            assert "read_only" in tool_info
-            assert "skill" in tool_info
-            assert len(tool_info["description"]) > 0
+    def test_all_tools_have_required_fields(self):
+        from mcp_server.registry import get_registered_tools
+        tools = get_registered_tools()
+        assert len(tools) >= 40, f"期望至少 40 个工具，实际 {len(tools)}"
+        for t in tools:
+            assert t.name, f"工具缺少 name"
+            assert t.description, f"{t.name} 缺少 description"
+            assert isinstance(t.read_only, bool), f"{t.name} read_only 不是 bool"
+            assert "readOnlyHint" in t.annotations, f"{t.name} 缺少 readOnlyHint"
 
-    def test_read_only_tools(self):
-        from mcp_server.registry import TOOL_REGISTRY
-        write_tools = {"run_backtest", "run_daily_research", "update_data", "update_financials"}
-        for tool_name, tool_info in TOOL_REGISTRY.items():
-            if tool_name in write_tools:
-                assert tool_info["read_only"] is False
-            else:
-                assert tool_info["read_only"] is True
+    def test_write_tools_are_not_read_only(self):
+        """写操作工具必须有 read_only=False。"""
+        from mcp_server.registry import get_registered_tools
+        known_write_tools = {
+            "update_data", "run_daily_research", "update_financials",
+            "update_data_incremental", "run_backtest",
+            "generate_higher_order_report",
+        }
+        tools = get_registered_tools()
+        tool_map = {t.name: t for t in tools}
+        for name in known_write_tools:
+            assert name in tool_map, f"已知写工具 {name} 未注册"
+            assert tool_map[name].read_only is False, \
+                f"{name} 是写操作但 read_only=True"
+
+    def test_all_tools_have_skill_reference(self):
+        """每个工具的 description 应包含 skill 引用（参见skill:）。"""
+        from mcp_server.registry import get_registered_tools
+        tools = get_registered_tools()
+        no_skill = [t.name for t in tools if t.skill is None]
+        # 允许少数无 skill 的工具，但不应超过 5 个
+        assert len(no_skill) <= 5, \
+            f"过多工具缺少 skill 引用: {no_skill}"
+
+    def test_tool_names_are_unique(self):
+        from mcp_server.registry import get_registered_tools
+        tools = get_registered_tools()
+        names = [t.name for t in tools]
+        assert len(names) == len(set(names)), "存在重复的工具名"

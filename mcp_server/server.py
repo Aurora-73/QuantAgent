@@ -47,6 +47,7 @@ if settings.log_dir and not Path(settings.log_dir).is_absolute():
 discover_tools_from_module("mcp_server.tools_data")
 discover_tools_from_module("mcp_server.tools_risk")
 discover_tools_from_module("mcp_server.tools_knowledge")
+discover_tools_from_module("mcp_server.tools_committee")
 
 # Import strategies to trigger @register_strategy decorators
 import strategies.momentum.strategy  # noqa: F401

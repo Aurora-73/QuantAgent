@@ -1,5 +1,3 @@
-# 知识探索工作流
-
 ---
 name: knowledge-exploration
 description: 探索知识库中的事件、决策、假设和文档，全面了解投资相关信息
@@ -30,6 +28,9 @@ workflow:
     mcp: get_knowledge_stats
     next: 完成
 ---
+# 知识探索工作流
+
+
 
 ## 🔄 工作流总览
 

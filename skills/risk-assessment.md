@@ -1,5 +1,3 @@
-# 风险评估工作流
-
 ---
 name: risk-assessment
 description: 策略风险评估标准流程，包含压力测试、归因分析和风险报告
@@ -18,6 +16,9 @@ workflow:
     mcp: get_risk_report
     next: 完成
 ---
+# 风险评估工作流
+
+
 
 ## 🔄 工作流总览
 

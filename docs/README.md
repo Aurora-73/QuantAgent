@@ -36,23 +36,24 @@ docs/
 ├── reference/                   ← 参考手册
 │   ├── cli_reference.md         命令行接口参考
 │   ├── configuration.md         配置参数完整参考
+│   ├── data-source-analysis.md  数据源分析报告
+│   ├── known-issues.md          已知问题与限制
 │   └── reference-projects.md    参考项目分析（_reference/ 下 19 个开源项目）
 ├── research/                    ← 研究层文档
 │   ├── backtesting.md           回测最佳实践
 │   ├── data_schema.md           数据契约（核心数据类型）
 │   └── verification_loop.md     验证闭环设计
 ├── plan/                        ← 实施计划
-│   ├── acceptance-criteria.md         验收标准
-│   ├── issues.md                      待解决问题跟踪
-│   ├── data-source-analysis.md        数据源分析报告
-│   ├── phase-2-implementation-plan.md Phase 2 实施计划
-│   ├── phase-3-improvement-plan.md    Phase 3 改进计划（可扩展+高性能+安全）
-│   ├── data-quality-improvement-plan.md 数据质量改进计划
-│   ├── linux-server-test-plan.md      Linux 服务器测试计划
-│   └── archive/                       ← 已归档的历史计划
+│   ├── phase-4-improvement-plan.md  Phase 4 改进计划（唯一 active plan）
+│   └── archive/                 ← 已完成/过时的历史计划
+│       ├── acceptance-criteria.md         验收标准
+│       ├── data-quality-improvement-plan.md 数据质量改进计划
 │       ├── issue-001-duckdb-index-error.md  DuckDB 索引错误（已修复）
-│       ├── phase-0-issues.md                Phase 0 问题记录
-│       └── phase-a-b-plan-legacy.md         Phase A/B 历史计划
+│       ├── linux-server-test-plan.md      Linux 服务器测试计划
+│       ├── phase-0-issues.md              Phase 0 问题记录
+│       ├── phase-2-implementation-plan.md Phase 2 实施计划
+│       ├── phase-3-improvement-plan.md    Phase 3 改进计划
+│       └── phase-a-b-plan-legacy.md       Phase A/B 历史计划
 ├── runbook/                     ← 故障排除
 │   └── troubleshooting.md       常见问题与排查
 └── wiki/                        ← 交易方法论库

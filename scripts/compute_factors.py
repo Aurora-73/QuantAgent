@@ -166,6 +166,9 @@ def main():
     # 验证 DB 中的因子数量
     try:
         storage = DataStorage()
+        # 批量写入后刷新统计信息，使后续查询能利用 zone-map
+        storage.analyze("research.factors")
+        storage.analyze("factors")
         result = storage.conn.execute(
             "SELECT COUNT(DISTINCT factor_name) FROM research.factors"
         ).fetchone()

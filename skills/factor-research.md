@@ -1,5 +1,3 @@
-# 因子研究工作流
-
 ---
 name: factor-research
 description: 因子研究标准流程，从获取因子列表到评估因子有效性
@@ -18,6 +16,9 @@ workflow:
     mcp: run_decay_detection
     next: 完成
 ---
+# 因子研究工作流
+
+
 
 ## 🔄 工作流总览
 

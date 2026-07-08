@@ -124,6 +124,12 @@ def update_market_data(target_date: date = None,
 
     logger.info(f"数据更新完成: 更新 {result['tickers_updated']} 只, "
                 f"新增 {result['rows_added']} 行, 跳过 {len(result['skipped'])} 只")
+
+    # 批量写入后刷新统计信息，使后续查询能利用 zone-map
+    if result["tickers_updated"] > 0:
+        storage.analyze("stock_daily")
+        storage.analyze("raw.stock_daily")
+
     return result
 
 
@@ -197,6 +203,10 @@ def update_data(universe: str = "csi300",
         logger.error(f"  失败: {len(failed)}")
         for t, e in failed[:5]:
             logger.error(f"  {t}: {e}")
+
+    # 批量写入后刷新统计信息，使后续查询能利用 zone-map
+    logger.info("  刷新 DuckDB 统计信息 (ANALYZE)...")
+    storage.analyze()
 
     # 统计
     logger.info("[3/3] 数据统计...")

@@ -1,5 +1,3 @@
-# 行业板块选股工作流
-
 ---
 name: sector-screening
 description: 行业/概念板块选股四步筛选法，从获取板块成分股到构建指数再到逐股分析
@@ -22,6 +20,9 @@ workflow:
     mcp: get_market_overview
     next: 完成
 ---
+# 行业板块选股工作流
+
+
 
 ## 🔄 工作流总览
 

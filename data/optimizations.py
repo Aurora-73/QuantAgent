@@ -77,6 +77,16 @@ def apply_optimizations(conn):
     """Apply all optimizations"""
     create_indexes(conn)
     create_views(conn)
+    # 刷新统计信息，使查询优化器能利用 zone-map 和基数估计
+    for table in [
+        "stock_daily", "index_daily", "factors", "events",
+        "raw.stock_daily", "raw.index_daily",
+        "research.factors", "research.financials", "research.events",
+    ]:
+        try:
+            conn.execute(f"ANALYZE {table}")
+        except Exception:
+            pass
 
 
 def save_factors_batch(conn, ticker, factors_df):
@@ -113,10 +123,12 @@ def save_factors_batch(conn, ticker, factors_df):
     df = pd.DataFrame(rows)
     df["date"] = pd.to_datetime(df["date"]).dt.date
 
+    # ORDER BY ticker, date, factor_name 使 DuckDB zone-maps 对范围查询生效
     conn.execute("""
         INSERT OR REPLACE INTO factors
         SELECT ticker, date, factor_name, factor_value
         FROM df
+        ORDER BY ticker, date, factor_name
     """)
 
     df["neutralized_value"] = None
@@ -125,6 +137,7 @@ def save_factors_batch(conn, ticker, factors_df):
         INSERT OR REPLACE INTO research.factors
         SELECT ticker, date, factor_name, factor_value, neutralized_value, computed_at
         FROM df
+        ORDER BY ticker, date, factor_name
     """)
 
 
